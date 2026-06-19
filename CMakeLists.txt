@@ -11,6 +11,7 @@ add_library(version SHARED
     src/proxy.cpp
     src/hook.cpp
     src/log.cpp
+    src/config.cpp
     src/il2cpp_symbols.cpp
     src/version.rc
     src/version.def
@@ -25,6 +26,7 @@ target_include_directories(version PRIVATE
     deps/minhook/include
     deps/minhook/src
     deps/minhook/src/hde
+    deps/rapidjson/include
 )
 
 target_compile_definitions(version PRIVATE

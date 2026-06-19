@@ -1,7 +1,10 @@
 #include "stdinclude.hpp"
 
+#include "config.hpp"
+
 namespace {
     using GetSchemeTypeFn = int (*)();
+    using GetStringFn = void* (*)();
     constexpr int kHttpSchemeType = 0;
     constexpr DWORD kHookPollIntervalMs = 500;
     constexpr DWORD kGameAssemblySettleDelayMs = 5000;
@@ -9,6 +12,8 @@ namespace {
 
     volatile LONG g_hook_installed = 0;
     GetSchemeTypeFn g_orig_get_scheme_type = nullptr;
+    GetStringFn g_orig_get_application_server_url = nullptr;
+    GetStringFn g_orig_get_resource_server_url = nullptr;
     volatile LONG g_logged_gameassembly = 0;
     volatile LONG g_exports_state = 0;
     ULONGLONG g_gameassembly_seen_tick = 0;
@@ -19,6 +24,22 @@ namespace {
             hook_log("[cgss-http-hook] GetSchemeType hook invoked");
         }
         return kHttpSchemeType;
+    }
+
+    void* get_application_server_url_hook() {
+        const auto& urls = config::get();
+        if (!urls.api_url.empty()) {
+            return il2cpp_symbols::new_string(urls.api_url.c_str());
+        }
+        return g_orig_get_application_server_url ? g_orig_get_application_server_url() : nullptr;
+    }
+
+    void* get_resource_server_url_hook() {
+        const auto& urls = config::get();
+        if (!urls.asset_url.empty()) {
+            return il2cpp_symbols::new_string(urls.asset_url.c_str());
+        }
+        return g_orig_get_resource_server_url ? g_orig_get_resource_server_url() : nullptr;
     }
 
     void patch_custom_preference_scheme() {
@@ -77,6 +98,13 @@ namespace {
             return;
         }
 
+        auto get_application_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetApplicationServerUrl", 0
+        );
+        auto get_resource_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetResourceServerUrl", 0
+        );
+
         auto mh_status = MH_Initialize();
         if (mh_status != MH_OK && mh_status != MH_ERROR_ALREADY_INITIALIZED) {
             hook_log("[cgss-http-hook] MH_Initialize failed");
@@ -99,6 +127,34 @@ namespace {
             return;
         }
 
+        if (get_application_server_url_addr) {
+            auto create_status = MH_CreateHook(
+                reinterpret_cast<void*>(get_application_server_url_addr),
+                reinterpret_cast<void*>(&get_application_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_get_application_server_url)
+            );
+            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
+                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_application_server_url_addr));
+                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
+                    hook_log("[cgss-http-hook] hooked Stage.NetworkUtil.GetApplicationServerUrl");
+                }
+            }
+        }
+
+        if (get_resource_server_url_addr) {
+            auto create_status = MH_CreateHook(
+                reinterpret_cast<void*>(get_resource_server_url_addr),
+                reinterpret_cast<void*>(&get_resource_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_get_resource_server_url)
+            );
+            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
+                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_resource_server_url_addr));
+                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
+                    hook_log("[cgss-http-hook] hooked Stage.NetworkUtil.GetResourceServerUrl");
+                }
+            }
+        }
+
         InterlockedExchange(&g_hook_installed, 1);
         hook_log("[cgss-http-hook] hooked Stage.NetworkUtil.GetSchemeType");
     }
@@ -117,5 +173,6 @@ namespace {
 }
 
 void start_hook_thread() {
+    config::load();
     CreateThread(nullptr, 0, init_thread, nullptr, 0, nullptr);
 }

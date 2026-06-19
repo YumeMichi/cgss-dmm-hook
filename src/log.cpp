@@ -1,5 +1,7 @@
 #include "stdinclude.hpp"
 
+#include <cstdarg>
+
 namespace {
     HANDLE g_log_file = INVALID_HANDLE_VALUE;
 
@@ -52,4 +54,18 @@ void hook_log(const char* message) {
     DWORD ignored = 0;
     WriteFile(log_file, message, lstrlenA(message), &ignored, nullptr);
     WriteFile(log_file, "\r\n", 2, &ignored, nullptr);
+}
+
+void hook_logf(const char* format, ...) {
+    if (!format) {
+        return;
+    }
+
+    char buffer[1024] = {};
+    va_list args;
+    va_start(args, format);
+    wvsprintfA(buffer, format, args);
+    va_end(args);
+
+    hook_log(buffer);
 }

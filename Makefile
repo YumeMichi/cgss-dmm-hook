@@ -8,6 +8,7 @@ CXX := x86_64-w64-mingw32-g++
 WINDRES := x86_64-w64-mingw32-windres
 
 INCLUDES := -Isrc -Ideps/minhook/include -Ideps/minhook/src -Ideps/minhook/src/hde
+INCLUDES += -Ideps/rapidjson/include
 DEFINES := -DNOMINMAX -DWIN32_LEAN_AND_MEAN
 CFLAGS := -std=gnu11 $(DEFINES) $(INCLUDES)
 CXXFLAGS := -std=gnu++20 -fno-exceptions -fno-rtti $(DEFINES) $(INCLUDES)
@@ -34,6 +35,7 @@ CXX_SRCS := \
 	src/proxy.cpp \
 	src/hook.cpp \
 	src/log.cpp \
+	src/config.cpp \
 	src/il2cpp_symbols.cpp
 
 RC_SRCS := src/version.rc

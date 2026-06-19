@@ -10,6 +10,7 @@ il2cpp_class_get_field_from_name_t il2cpp_symbols::il2cpp_class_get_field_from_n
 il2cpp_method_get_name_t il2cpp_symbols::il2cpp_method_get_name = nullptr;
 il2cpp_thread_attach_t il2cpp_symbols::il2cpp_thread_attach = nullptr;
 il2cpp_thread_current_t il2cpp_symbols::il2cpp_thread_current = nullptr;
+il2cpp_string_new_t il2cpp_symbols::il2cpp_string_new = nullptr;
 il2cpp_runtime_class_init_t il2cpp_symbols::il2cpp_runtime_class_init = nullptr;
 il2cpp_field_get_flags_t il2cpp_symbols::il2cpp_field_get_flags = nullptr;
 il2cpp_field_static_set_value_t il2cpp_symbols::il2cpp_field_static_set_value = nullptr;
@@ -33,6 +34,7 @@ void il2cpp_symbols::init(HMODULE game_module) {
     resolve(game_module, "il2cpp_method_get_name", il2cpp_method_get_name);
     resolve(game_module, "il2cpp_thread_attach", il2cpp_thread_attach);
     resolve(game_module, "il2cpp_thread_current", il2cpp_thread_current);
+    resolve(game_module, "il2cpp_string_new", il2cpp_string_new);
     resolve(game_module, "il2cpp_runtime_class_init", il2cpp_runtime_class_init);
     resolve(game_module, "il2cpp_field_get_flags", il2cpp_field_get_flags);
     resolve(game_module, "il2cpp_field_static_set_value", il2cpp_field_static_set_value);
@@ -42,7 +44,8 @@ bool il2cpp_symbols::ready() {
     return il2cpp_domain_get && il2cpp_domain_assembly_open && il2cpp_assembly_get_image &&
            il2cpp_class_from_name && il2cpp_class_get_method_from_name &&
            il2cpp_class_get_field_from_name && il2cpp_thread_attach &&
-           il2cpp_runtime_class_init && il2cpp_field_get_flags && il2cpp_field_static_set_value;
+           il2cpp_string_new && il2cpp_runtime_class_init &&
+           il2cpp_field_get_flags && il2cpp_field_static_set_value;
 }
 
 bool il2cpp_symbols::domain_ready() {
@@ -67,6 +70,13 @@ bool il2cpp_symbols::attach_thread() {
     }
     il2cpp_thread_attach(il2cpp_domain);
     return true;
+}
+
+void* il2cpp_symbols::new_string(const char* value) {
+    if (!value || !attach_thread() || !il2cpp_string_new) {
+        return nullptr;
+    }
+    return il2cpp_string_new(value);
 }
 
 void* il2cpp_symbols::get_class(const char* assembly_name, const char* namespaze, const char* klass_name) {

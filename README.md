@@ -6,6 +6,7 @@
 - 转发 `UnityPlayer.dll` 实际导入的少量 `version.dll` 导出函数
 - 等待 IL2CPP 运行时初始化稳定
 - 运行时 hook `Stage.NetworkUtil.GetSchemeType()`，强制返回 `0`
+- 支持通过 `config.json` 覆盖 `api_url` 和 `asset_url`
 
 **目录结构**
 - `src/`：代理、日志、IL2CPP 符号解析、hook 逻辑
@@ -16,6 +17,7 @@
 - `GameAssembly.dll` 出现时，IL2CPP runtime 可能还不能安全访问，因此 hook 线程会额外等待一小段时间
 - 运行时日志会写到游戏目录下的 `cgss-http-hook.log`
 - 生成的 DLL 包含 Windows 版本资源，定义在 `src/version.rc`
+- `config.json` 中的 URL 会自动规范化：若写了 `http://` 或 `https://` 会自动去掉，若末尾缺少 `/` 会自动补上
 
 **构建**
 ```sh
@@ -28,7 +30,20 @@ cmake --build build
 **输出**
 - `build/version.dll`
 
+**config.json**
+```json
+{
+  "api_url": "apis.game.starlight-stage.jp/",
+  "asset_url": "asset-starlight-stage.akamaized.net/"
+}
+```
+
+字段说明：
+- `api_url`：API 主机名，按原始字段格式填写，不带 scheme
+- `asset_url`：资源主机名，按原始字段格式填写，不带 scheme
+
 **使用方法**
 1. 将 `build/version.dll` 复制到 `imascgstage.exe` 同目录
-2. 启动游戏
-3. 如果 hook 未生效，查看 `cgss-http-hook.log`
+2. 如需覆盖地址，在同目录放置 `config.json`
+3. 启动游戏
+4. 如果 hook 未生效，查看 `cgss-http-hook.log`

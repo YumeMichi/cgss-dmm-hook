@@ -15,6 +15,7 @@ typedef FieldInfo* (*il2cpp_class_get_field_from_name_t)(void* klass, const char
 typedef const char* (*il2cpp_method_get_name_t)(MethodInfo* method);
 typedef void (*il2cpp_thread_attach_t)(void* domain);
 typedef void* (*il2cpp_thread_current_t)();
+typedef void* (*il2cpp_string_new_t)(const char* str);
 typedef void (*il2cpp_runtime_class_init_t)(void* klass);
 typedef uint32_t (*il2cpp_field_get_flags_t)(FieldInfo* field);
 typedef void (*il2cpp_field_static_set_value_t)(FieldInfo* field, void* value);
@@ -51,6 +52,7 @@ namespace il2cpp_symbols {
     extern il2cpp_method_get_name_t il2cpp_method_get_name;
     extern il2cpp_thread_attach_t il2cpp_thread_attach;
     extern il2cpp_thread_current_t il2cpp_thread_current;
+    extern il2cpp_string_new_t il2cpp_string_new;
     extern il2cpp_runtime_class_init_t il2cpp_runtime_class_init;
     extern il2cpp_field_get_flags_t il2cpp_field_get_flags;
     extern il2cpp_field_static_set_value_t il2cpp_field_static_set_value;
@@ -60,6 +62,7 @@ namespace il2cpp_symbols {
     bool ready();
     bool domain_ready();
     bool attach_thread();
+    void* new_string(const char* value);
     void* get_class(const char* assembly_name, const char* namespaze, const char* klass_name);
     bool set_static_int_field(void* klass, const char* field_name, int value);
     uintptr_t get_method_pointer(const char* assembly_name, const char* namespaze,
