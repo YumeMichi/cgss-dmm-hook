@@ -11,6 +11,7 @@ il2cpp_method_get_name_t il2cpp_symbols::il2cpp_method_get_name = nullptr;
 il2cpp_thread_attach_t il2cpp_symbols::il2cpp_thread_attach = nullptr;
 il2cpp_thread_current_t il2cpp_symbols::il2cpp_thread_current = nullptr;
 il2cpp_string_new_t il2cpp_symbols::il2cpp_string_new = nullptr;
+il2cpp_object_new_t il2cpp_symbols::il2cpp_object_new = nullptr;
 il2cpp_runtime_class_init_t il2cpp_symbols::il2cpp_runtime_class_init = nullptr;
 il2cpp_field_get_flags_t il2cpp_symbols::il2cpp_field_get_flags = nullptr;
 il2cpp_field_static_set_value_t il2cpp_symbols::il2cpp_field_static_set_value = nullptr;
@@ -35,6 +36,7 @@ void il2cpp_symbols::init(HMODULE game_module) {
     resolve(game_module, "il2cpp_thread_attach", il2cpp_thread_attach);
     resolve(game_module, "il2cpp_thread_current", il2cpp_thread_current);
     resolve(game_module, "il2cpp_string_new", il2cpp_string_new);
+    resolve(game_module, "il2cpp_object_new", il2cpp_object_new);
     resolve(game_module, "il2cpp_runtime_class_init", il2cpp_runtime_class_init);
     resolve(game_module, "il2cpp_field_get_flags", il2cpp_field_get_flags);
     resolve(game_module, "il2cpp_field_static_set_value", il2cpp_field_static_set_value);
@@ -44,7 +46,7 @@ bool il2cpp_symbols::ready() {
     return il2cpp_domain_get && il2cpp_domain_assembly_open && il2cpp_assembly_get_image &&
            il2cpp_class_from_name && il2cpp_class_get_method_from_name &&
            il2cpp_class_get_field_from_name && il2cpp_thread_attach &&
-           il2cpp_string_new && il2cpp_runtime_class_init &&
+           il2cpp_string_new && il2cpp_object_new && il2cpp_runtime_class_init &&
            il2cpp_field_get_flags && il2cpp_field_static_set_value;
 }
 
@@ -125,6 +127,34 @@ bool il2cpp_symbols::set_static_int_field(void* klass, const char* field_name, i
     }
 
     il2cpp_field_static_set_value(field, &value);
+    return true;
+}
+
+bool il2cpp_symbols::set_static_string_field(void* klass, const char* field_name, const char* value) {
+    if (!klass || !field_name || !value || !attach_thread()) {
+        return false;
+    }
+
+    il2cpp_runtime_class_init(klass);
+    auto field = il2cpp_class_get_field_from_name(klass, field_name);
+    if (!field) {
+        hook_log("[cgss-http-hook] field not found");
+        return false;
+    }
+
+    auto flags = il2cpp_field_get_flags(field);
+    if ((flags & 0x10U) == 0) {
+        hook_log("[cgss-http-hook] field is not static");
+        return false;
+    }
+
+    auto string_object = new_string(value);
+    if (!string_object) {
+        hook_log("[cgss-http-hook] failed to allocate il2cpp string");
+        return false;
+    }
+
+    il2cpp_field_static_set_value(field, &string_object);
     return true;
 }
 
