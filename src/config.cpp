@@ -60,6 +60,13 @@ namespace config {
             }
             out = normalize_base_url(document[key].GetString());
         }
+
+        void read_bool(const rapidjson::Document& document, const char* key, bool& out) {
+            if (!document.HasMember(key) || !document[key].IsBool()) {
+                return;
+            }
+            out = document[key].GetBool();
+        }
     }
 
     void load() {
@@ -88,8 +95,11 @@ namespace config {
             return;
         }
 
+        read_bool(document, "force_http", g_urls.force_http);
         read_string(document, "api_url", g_urls.api_url);
         read_string(document, "asset_url", g_urls.asset_url);
+
+        hook_logf("[cgss-http-hook] force_http=%s", g_urls.force_http ? "true" : "false");
 
         if (!g_urls.api_url.empty()) {
             hook_logf("[cgss-http-hook] normalized api_url=%s", g_urls.api_url.c_str());

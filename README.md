@@ -5,7 +5,7 @@
 **用途**
 - 转发 `UnityPlayer.dll` 实际导入的少量 `version.dll` 导出函数
 - 等待 IL2CPP 运行时初始化稳定
-- 运行时 hook `Stage.NetworkUtil.GetSchemeType()`，强制返回 `0`
+- 可选地 hook `Stage.NetworkUtil.GetSchemeType()`，在需要时强制切到 `http`
 - 支持通过 `config.json` 覆盖 `api_url` 和 `asset_url`
 
 **目录结构**
@@ -17,6 +17,7 @@
 - `GameAssembly.dll` 出现时，IL2CPP runtime 可能还不能安全访问，因此 hook 线程会额外等待一小段时间
 - 运行时日志会写到游戏目录下的 `cgss-http-hook.log`
 - 生成的 DLL 包含 Windows 版本资源，定义在 `src/version.rc`
+- 支持通过 `force_http` 控制是否 hook scheme，默认 `true`
 - `config.json` 中的 URL 会自动规范化：若写了 `http://` 或 `https://` 会自动去掉，若末尾缺少 `/` 会自动补上
 
 **构建**
@@ -33,12 +34,14 @@ cmake --build build
 **config.json**
 ```json
 {
+  "force_http": true,
   "api_url": "apis.game.starlight-stage.jp/",
   "asset_url": "asset-starlight-stage.akamaized.net/"
 }
 ```
 
 字段说明：
+- `force_http`：是否强制将 scheme 改成 `http`。默认 `true`
 - `api_url`：API 主机名，按原始字段格式填写，不带 scheme
 - `asset_url`：资源主机名，按原始字段格式填写，不带 scheme
 

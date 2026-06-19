@@ -43,6 +43,12 @@ namespace {
     }
 
     void patch_custom_preference_scheme() {
+        const auto& urls = config::get();
+        if (!urls.force_http) {
+            hook_log("[cgss-http-hook] force_http disabled, skipping CustomPreference scheme patch");
+            return;
+        }
+
         auto custom_preference = il2cpp_symbols::get_class(
             "Assembly-CSharp.dll", "Cute", "CustomPreference"
         );
@@ -111,20 +117,25 @@ namespace {
             return;
         }
 
-        auto create_status = MH_CreateHook(
-            reinterpret_cast<void*>(addr),
-            reinterpret_cast<void*>(&get_scheme_type_hook),
-            reinterpret_cast<void**>(&g_orig_get_scheme_type)
-        );
-        if (create_status != MH_OK && create_status != MH_ERROR_ALREADY_CREATED) {
-            hook_log("[cgss-http-hook] MH_CreateHook failed");
-            return;
-        }
+        const auto& urls = config::get();
+        if (urls.force_http) {
+            auto create_status = MH_CreateHook(
+                reinterpret_cast<void*>(addr),
+                reinterpret_cast<void*>(&get_scheme_type_hook),
+                reinterpret_cast<void**>(&g_orig_get_scheme_type)
+            );
+            if (create_status != MH_OK && create_status != MH_ERROR_ALREADY_CREATED) {
+                hook_log("[cgss-http-hook] MH_CreateHook failed");
+                return;
+            }
 
-        auto enable_status = MH_EnableHook(reinterpret_cast<void*>(addr));
-        if (enable_status != MH_OK && enable_status != MH_ERROR_ENABLED) {
-            hook_log("[cgss-http-hook] MH_EnableHook failed");
-            return;
+            auto enable_status = MH_EnableHook(reinterpret_cast<void*>(addr));
+            if (enable_status != MH_OK && enable_status != MH_ERROR_ENABLED) {
+                hook_log("[cgss-http-hook] MH_EnableHook failed");
+                return;
+            }
+        } else {
+            hook_log("[cgss-http-hook] force_http disabled, keeping original scheme");
         }
 
         if (get_application_server_url_addr) {
@@ -156,7 +167,9 @@ namespace {
         }
 
         InterlockedExchange(&g_hook_installed, 1);
-        hook_log("[cgss-http-hook] hooked Stage.NetworkUtil.GetSchemeType");
+        if (urls.force_http) {
+            hook_log("[cgss-http-hook] hooked Stage.NetworkUtil.GetSchemeType");
+        }
     }
 
     DWORD WINAPI init_thread(void*) {
