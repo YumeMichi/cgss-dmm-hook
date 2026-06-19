@@ -50,3 +50,6 @@ cmake --build build
 2. 如需覆盖地址，在同目录放置 `config.json`
 3. 启动游戏
 4. 如果 hook 未生效，查看 `cgss-http-hook.log`
+
+**致谢**
+- 本项目的 `version.dll` 代理注入思路与运行时 IL2CPP hook 方向，受 `gkms-localify-dmm` 项目启发。
