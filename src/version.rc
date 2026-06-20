@@ -23,9 +23,10 @@ BEGIN
         BLOCK "040904B0"
         BEGIN
             VALUE "CompanyName", "YumeMichi\0"
-            VALUE "FileDescription", "cgss-dmm-hook version.dll proxy\0"
+            VALUE "FileDescription", "CGSS DMM hook library\0"
             VALUE "FileVersion", VER_FILEVERSION_STR
             VALUE "InternalName", "cgss-dmm-hook\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 YumeMichi\0"
             VALUE "OriginalFilename", "version.dll\0"
             VALUE "ProductName", "cgss-dmm-hook\0"
             VALUE "ProductVersion", VER_PRODUCTVERSION_STR
