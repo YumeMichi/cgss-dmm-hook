@@ -23,7 +23,7 @@ namespace {
             }
         }
         *last_sep = '\0';
-        lstrcatA(path, "\\cgss-http-hook.log");
+        lstrcatA(path, "\\cgss-dmm-hook.log");
 
         g_log_file = CreateFileA(
             path,

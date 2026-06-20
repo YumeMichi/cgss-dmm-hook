@@ -83,7 +83,7 @@ void* il2cpp_symbols::new_string(const char* value) {
 
 void* il2cpp_symbols::get_class(const char* assembly_name, const char* namespaze, const char* klass_name) {
     if (!attach_thread()) {
-        hook_log("[cgss-http-hook] il2cpp domain not ready");
+        hook_log("[cgss-dmm-hook] il2cpp domain not ready");
         return nullptr;
     }
     if (!ready() || !il2cpp_domain) {
@@ -92,17 +92,17 @@ void* il2cpp_symbols::get_class(const char* assembly_name, const char* namespaze
 
     auto assembly = il2cpp_domain_assembly_open(il2cpp_domain, assembly_name);
     if (!assembly) {
-        hook_log("[cgss-http-hook] assembly not found");
+        hook_log("[cgss-dmm-hook] assembly not found");
         return nullptr;
     }
     auto image = il2cpp_assembly_get_image(assembly);
     if (!image) {
-        hook_log("[cgss-http-hook] image not found");
+        hook_log("[cgss-dmm-hook] image not found");
         return nullptr;
     }
     auto klass = il2cpp_class_from_name(image, namespaze, klass_name);
     if (!klass) {
-        hook_log("[cgss-http-hook] class not found");
+        hook_log("[cgss-dmm-hook] class not found");
         return nullptr;
     }
     return klass;
@@ -116,13 +116,13 @@ bool il2cpp_symbols::set_static_int_field(void* klass, const char* field_name, i
     il2cpp_runtime_class_init(klass);
     auto field = il2cpp_class_get_field_from_name(klass, field_name);
     if (!field) {
-        hook_log("[cgss-http-hook] field not found");
+        hook_log("[cgss-dmm-hook] field not found");
         return false;
     }
 
     auto flags = il2cpp_field_get_flags(field);
     if ((flags & 0x10U) == 0) {
-        hook_log("[cgss-http-hook] field is not static");
+        hook_log("[cgss-dmm-hook] field is not static");
         return false;
     }
 
@@ -138,19 +138,19 @@ bool il2cpp_symbols::set_static_string_field(void* klass, const char* field_name
     il2cpp_runtime_class_init(klass);
     auto field = il2cpp_class_get_field_from_name(klass, field_name);
     if (!field) {
-        hook_log("[cgss-http-hook] field not found");
+        hook_log("[cgss-dmm-hook] field not found");
         return false;
     }
 
     auto flags = il2cpp_field_get_flags(field);
     if ((flags & 0x10U) == 0) {
-        hook_log("[cgss-http-hook] field is not static");
+        hook_log("[cgss-dmm-hook] field is not static");
         return false;
     }
 
     auto string_object = new_string(value);
     if (!string_object) {
-        hook_log("[cgss-http-hook] failed to allocate il2cpp string");
+        hook_log("[cgss-dmm-hook] failed to allocate il2cpp string");
         return false;
     }
 
@@ -166,7 +166,7 @@ uintptr_t il2cpp_symbols::get_method_pointer(const char* assembly_name, const ch
     }
     auto method = il2cpp_class_get_method_from_name(klass, method_name, args_count);
     if (!method) {
-        hook_log("[cgss-http-hook] method not found");
+        hook_log("[cgss-dmm-hook] method not found");
         return 0;
     }
     return method->methodPointer;

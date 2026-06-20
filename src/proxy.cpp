@@ -52,7 +52,7 @@ namespace {
 
         g_original = LoadLibraryA(path);
         if (!g_original) {
-            hook_log("[cgss-http-hook] failed to load original version.dll");
+            hook_log("[cgss-dmm-hook] failed to load original version.dll");
             return;
         }
 
@@ -61,11 +61,11 @@ namespace {
         VerQueryValueA_Original = reinterpret_cast<void*>(GetProcAddress(g_original, "VerQueryValueA"));
 
         if (!GetFileVersionInfoA_Original || !GetFileVersionInfoSizeA_Original || !VerQueryValueA_Original) {
-            hook_log("[cgss-http-hook] failed to resolve version exports");
+            hook_log("[cgss-dmm-hook] failed to resolve version exports");
             return;
         }
 
-        hook_log("[cgss-http-hook] version.dll initialized");
+        hook_log("[cgss-dmm-hook] version.dll initialized");
     }
 
     DWORD WINAPI init_thread(void*) {

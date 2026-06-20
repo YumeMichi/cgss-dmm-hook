@@ -1,4 +1,4 @@
-# cgss-http-hook
+# cgss-dmm-hook
 
 面向 Windows / DMM 版 CGSS 客户端的最小 `version.dll` 代理工程。
 
@@ -15,7 +15,7 @@
 **说明**
 - 本项目不依赖 `Il2CppDumper` 或 `script.json`
 - `GameAssembly.dll` 出现时，IL2CPP runtime 可能还不能安全访问，因此 hook 线程会额外等待一小段时间
-- 运行时日志会写到游戏目录下的 `cgss-http-hook.log`
+- 运行时日志会写到游戏目录下的 `cgss-dmm-hook.log`
 - 生成的 DLL 包含 Windows 版本资源，定义在 `src/version.rc`
 - 支持通过 `force_http` 控制是否 hook scheme，默认 `true`
 - `config.json` 中的 URL 会自动规范化：若写了 `http://` 或 `https://` 会自动去掉，若末尾缺少 `/` 会自动补上
@@ -49,7 +49,7 @@ cmake --build build
 1. 将 `build/version.dll` 复制到 `imascgstage.exe` 同目录
 2. 如需覆盖地址，在同目录放置 `config.json`
 3. 启动游戏
-4. 如果 hook 未生效，查看 `cgss-http-hook.log`
+4. 如果 hook 未生效，查看 `cgss-dmm-hook.log`
 
 **致谢**
 - 本项目的 `version.dll` 代理注入思路与运行时 IL2CPP hook 方向，受 `gkms-localify-dmm` 项目启发。

@@ -77,13 +77,13 @@ namespace config {
 
         const auto config_path = get_config_path();
         if (config_path.empty()) {
-            hook_log("[cgss-http-hook] failed to resolve config.json path");
+            hook_log("[cgss-dmm-hook] failed to resolve config.json path");
             return;
         }
 
         std::ifstream config_stream(config_path);
         if (!config_stream.is_open()) {
-            hook_log("[cgss-http-hook] config.json not found, using defaults");
+            hook_log("[cgss-dmm-hook] config.json not found, using defaults");
             return;
         }
 
@@ -91,7 +91,7 @@ namespace config {
         rapidjson::Document document;
         document.ParseStream(wrapper);
         if (document.HasParseError() || !document.IsObject()) {
-            hook_log("[cgss-http-hook] failed to parse config.json");
+            hook_log("[cgss-dmm-hook] failed to parse config.json");
             return;
         }
 
@@ -99,13 +99,13 @@ namespace config {
         read_string(document, "api_url", g_urls.api_url);
         read_string(document, "asset_url", g_urls.asset_url);
 
-        hook_logf("[cgss-http-hook] force_http=%s", g_urls.force_http ? "true" : "false");
+        hook_logf("[cgss-dmm-hook] force_http=%s", g_urls.force_http ? "true" : "false");
 
         if (!g_urls.api_url.empty()) {
-            hook_logf("[cgss-http-hook] normalized api_url=%s", g_urls.api_url.c_str());
+            hook_logf("[cgss-dmm-hook] normalized api_url=%s", g_urls.api_url.c_str());
         }
         if (!g_urls.asset_url.empty()) {
-            hook_logf("[cgss-http-hook] normalized asset_url=%s", g_urls.asset_url.c_str());
+            hook_logf("[cgss-dmm-hook] normalized asset_url=%s", g_urls.asset_url.c_str());
         }
     }
 

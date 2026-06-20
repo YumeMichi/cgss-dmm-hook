@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(cgss_http_hook LANGUAGES C CXX RC ASM_MASM)
+project(cgss_dmm_hook LANGUAGES C CXX RC ASM_MASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
