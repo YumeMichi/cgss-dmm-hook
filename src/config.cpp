@@ -54,6 +54,15 @@ namespace config {
             return value;
         }
 
+        std::string make_default_config_json() {
+            return
+                "{\r\n"
+                "  \"force_http\": false,\r\n"
+                "  \"api_url\": \"apis.game.starlight-stage.jp/\",\r\n"
+                "  \"asset_url\": \"asset-starlight-stage.akamaized.net/\"\r\n"
+                "}\r\n";
+        }
+
         void read_string(const rapidjson::Document& document, const char* key, std::string& out) {
             if (!document.HasMember(key) || !document[key].IsString()) {
                 return;
@@ -83,7 +92,14 @@ namespace config {
 
         std::ifstream config_stream(config_path);
         if (!config_stream.is_open()) {
-            hook_log("[cgss-dmm-hook] config.json not found, using defaults");
+            std::ofstream output_stream(config_path, std::ios::binary);
+            if (output_stream.is_open()) {
+                output_stream << make_default_config_json();
+                output_stream.close();
+                hook_log("[cgss-dmm-hook] config.json not found, generated default config.json");
+            } else {
+                hook_log("[cgss-dmm-hook] config.json not found, failed to generate default config.json");
+            }
             return;
         }
 
