@@ -59,7 +59,8 @@ namespace config {
                 "{\r\n"
                 "  \"force_http\": false,\r\n"
                 "  \"api_url\": \"apis.game.starlight-stage.jp/\",\r\n"
-                "  \"asset_url\": \"asset-starlight-stage.akamaized.net/\"\r\n"
+                "  \"asset_url\": \"asset-starlight-stage.akamaized.net/\",\r\n"
+                "  \"launch_borderless_helper\": true\r\n"
                 "}\r\n";
         }
 
@@ -114,8 +115,13 @@ namespace config {
         read_bool(document, "force_http", g_urls.force_http);
         read_string(document, "api_url", g_urls.api_url);
         read_string(document, "asset_url", g_urls.asset_url);
+        read_bool(document, "launch_borderless_helper", g_urls.launch_borderless_helper);
 
         hook_logf("[cgss-dmm-hook] force_http=%s", g_urls.force_http ? "true" : "false");
+        hook_logf(
+            "[cgss-dmm-hook] launch_borderless_helper=%s",
+            g_urls.launch_borderless_helper ? "true" : "false"
+        );
 
         if (!g_urls.api_url.empty()) {
             hook_logf("[cgss-dmm-hook] normalized api_url=%s", g_urls.api_url.c_str());

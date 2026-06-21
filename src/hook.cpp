@@ -1,6 +1,7 @@
 #include "stdinclude.hpp"
 
 #include "config.hpp"
+#include "hook.hpp"
 
 namespace {
     using GetSchemeTypeFn = int (*)(const MethodInfo*);
@@ -400,187 +401,98 @@ namespace {
             hook_log("[cgss-dmm-hook] force_http disabled, keeping original scheme");
         }
 
-        if (get_application_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(get_application_server_url_addr),
-                reinterpret_cast<void*>(&get_application_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_get_application_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_application_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Stage.NetworkUtil.GetApplicationServerUrl");
-                }
+        auto hook_method = [](uintptr_t address, void* detour, void** original, const char* name) {
+            if (!address) {
+                return;
             }
-        }
+            auto create_status = MH_CreateHook(reinterpret_cast<void*>(address), detour, original);
+            if (create_status != MH_OK && create_status != MH_ERROR_ALREADY_CREATED) {
+                return;
+            }
+            auto enable_status = MH_EnableHook(reinterpret_cast<void*>(address));
+            if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
+                hook_logf("[cgss-dmm-hook] hooked %s", name);
+            }
+        };
 
-        if (get_resource_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(get_resource_server_url_addr),
-                reinterpret_cast<void*>(&get_resource_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_get_resource_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_resource_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Stage.NetworkUtil.GetResourceServerUrl");
-                }
-            }
-        }
-
-        if (get_tele_scope_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(get_tele_scope_server_url_addr),
-                reinterpret_cast<void*>(&get_tele_scope_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_get_tele_scope_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_tele_scope_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Stage.NetworkUtil.GetTeleScopeServerUrl");
-                }
-            }
-        }
-
-        if (get_concert_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(get_concert_server_url_addr),
-                reinterpret_cast<void*>(&get_concert_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_get_concert_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_concert_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Stage.NetworkUtil.GetConcertServerUrl");
-                }
-            }
-        }
-
-        if (cp_get_application_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_get_application_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_get_application_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_get_application_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_get_application_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.GetApplicationServerURL");
-                }
-            }
-        }
-
-        if (cp_get_tele_scope_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_get_tele_scope_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_get_tele_scope_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_get_tele_scope_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_get_tele_scope_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.GetTeleScopeServerURL");
-                }
-            }
-        }
-
-        if (cp_get_concert_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_get_concert_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_get_concert_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_get_concert_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_get_concert_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.GetConcertServerURL");
-                }
-            }
-        }
-
-        if (cp_get_resource_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_get_resource_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_get_resource_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_get_resource_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_get_resource_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.GetResourceServerURL");
-                }
-            }
-        }
-
-        if (cp_set_application_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_set_application_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_set_application_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_set_application_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_set_application_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.SetApplicationServerURL");
-                }
-            }
-        }
-
-        if (cp_set_tele_scope_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_set_tele_scope_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_set_tele_scope_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_set_tele_scope_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_set_tele_scope_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.SetTeleScopeServerURL");
-                }
-            }
-        }
-
-        if (cp_set_concert_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_set_concert_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_set_concert_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_set_concert_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_set_concert_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.SetConcertServerURL");
-                }
-            }
-        }
-
-        if (cp_set_resource_server_url_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_set_resource_server_url_addr),
-                reinterpret_cast<void*>(&custom_preference_set_resource_server_url_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_set_resource_server_url)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_set_resource_server_url_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.SetResourceServerURL");
-                }
-            }
-        }
-
-        if (cp_set_scheme_mode_addr) {
-            auto create_status = MH_CreateHook(
-                reinterpret_cast<void*>(cp_set_scheme_mode_addr),
-                reinterpret_cast<void*>(&custom_preference_set_scheme_mode_hook),
-                reinterpret_cast<void**>(&g_orig_custom_preference_set_scheme_mode)
-            );
-            if (create_status == MH_OK || create_status == MH_ERROR_ALREADY_CREATED) {
-                auto enable_status = MH_EnableHook(reinterpret_cast<void*>(cp_set_scheme_mode_addr));
-                if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
-                    hook_log("[cgss-dmm-hook] hooked Cute.CustomPreference.SetScemeMode");
-                }
-            }
-        }
+        hook_method(
+            get_application_server_url_addr,
+            reinterpret_cast<void*>(&get_application_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_get_application_server_url),
+            "Stage.NetworkUtil.GetApplicationServerUrl"
+        );
+        hook_method(
+            get_resource_server_url_addr,
+            reinterpret_cast<void*>(&get_resource_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_get_resource_server_url),
+            "Stage.NetworkUtil.GetResourceServerUrl"
+        );
+        hook_method(
+            get_tele_scope_server_url_addr,
+            reinterpret_cast<void*>(&get_tele_scope_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_get_tele_scope_server_url),
+            "Stage.NetworkUtil.GetTeleScopeServerUrl"
+        );
+        hook_method(
+            get_concert_server_url_addr,
+            reinterpret_cast<void*>(&get_concert_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_get_concert_server_url),
+            "Stage.NetworkUtil.GetConcertServerUrl"
+        );
+        hook_method(
+            cp_get_application_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_get_application_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_get_application_server_url),
+            "Cute.CustomPreference.GetApplicationServerURL"
+        );
+        hook_method(
+            cp_get_tele_scope_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_get_tele_scope_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_get_tele_scope_server_url),
+            "Cute.CustomPreference.GetTeleScopeServerURL"
+        );
+        hook_method(
+            cp_get_concert_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_get_concert_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_get_concert_server_url),
+            "Cute.CustomPreference.GetConcertServerURL"
+        );
+        hook_method(
+            cp_get_resource_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_get_resource_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_get_resource_server_url),
+            "Cute.CustomPreference.GetResourceServerURL"
+        );
+        hook_method(
+            cp_set_application_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_set_application_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_set_application_server_url),
+            "Cute.CustomPreference.SetApplicationServerURL"
+        );
+        hook_method(
+            cp_set_tele_scope_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_set_tele_scope_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_set_tele_scope_server_url),
+            "Cute.CustomPreference.SetTeleScopeServerURL"
+        );
+        hook_method(
+            cp_set_concert_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_set_concert_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_set_concert_server_url),
+            "Cute.CustomPreference.SetConcertServerURL"
+        );
+        hook_method(
+            cp_set_resource_server_url_addr,
+            reinterpret_cast<void*>(&custom_preference_set_resource_server_url_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_set_resource_server_url),
+            "Cute.CustomPreference.SetResourceServerURL"
+        );
+        hook_method(
+            cp_set_scheme_mode_addr,
+            reinterpret_cast<void*>(&custom_preference_set_scheme_mode_hook),
+            reinterpret_cast<void**>(&g_orig_custom_preference_set_scheme_mode),
+            "Cute.CustomPreference.SetScemeMode"
+        );
 
         apply_custom_preference_url_overrides();
 

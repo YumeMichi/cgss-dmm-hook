@@ -21,12 +21,20 @@ add_library(version SHARED
     deps/minhook/src/hde/hde64.c
 )
 
+add_executable(cgss-borderless-helper WIN32
+    src/helper_main.cpp
+)
+
 target_include_directories(version PRIVATE
     src
     deps/minhook/include
     deps/minhook/src
     deps/minhook/src/hde
     deps/rapidjson/include
+)
+
+target_include_directories(cgss-borderless-helper PRIVATE
+    src
 )
 
 target_compile_definitions(version PRIVATE
@@ -39,9 +47,19 @@ target_link_libraries(version PRIVATE
     kernel32
 )
 
+target_link_libraries(cgss-borderless-helper PRIVATE
+    user32
+    kernel32
+    shell32
+)
+
 set_target_properties(version PROPERTIES
     OUTPUT_NAME "version"
     PREFIX ""
+)
+
+set_target_properties(cgss-borderless-helper PROPERTIES
+    OUTPUT_NAME "cgss-borderless-helper"
 )
 
 if(MINGW)
@@ -49,7 +67,15 @@ if(MINGW)
         "$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>"
         "$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>"
     )
+    target_compile_options(cgss-borderless-helper PRIVATE
+        -fno-exceptions
+        -fno-rtti
+    )
     target_link_options(version PRIVATE
+        "-static-libgcc"
+        "-static-libstdc++"
+    )
+    target_link_options(cgss-borderless-helper PRIVATE
         "-static-libgcc"
         "-static-libstdc++"
     )
