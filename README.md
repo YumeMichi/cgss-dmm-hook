@@ -18,6 +18,7 @@
 - `GameAssembly.dll` 出现时，IL2CPP runtime 可能还不能安全访问，因此 hook 线程会额外等待一小段时间
 - 运行时日志会写到游戏目录下的 `cgss-dmm-hook.log`
 - 生成的 DLL 包含 Windows 版本资源，定义在 `src/version.rc`
+- 项目主许可证见 `LICENSE`，第三方依赖说明见 `THIRD_PARTY_NOTICES.md`
 - 支持通过 `force_http` 控制是否 hook scheme，默认 `true`
 - `config.json` 中的 URL 会自动规范化：若写了 `http://` 或 `https://` 会自动去掉，若末尾缺少 `/` 会自动补上
 
