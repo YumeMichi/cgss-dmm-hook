@@ -5,6 +5,7 @@
 
 namespace {
     using GetSchemeTypeFn = int (*)(const MethodInfo*);
+    using GetStringFn = void* (*)(const MethodInfo*);
     using SetStringFn = void (*)(void*, const MethodInfo*);
     using SetSchemeModeFn = void (*)(int, const MethodInfo*);
     constexpr int kHttpSchemeType = 0;
@@ -14,32 +15,51 @@ namespace {
 
     volatile LONG g_hook_installed = 0;
     GetSchemeTypeFn g_orig_get_scheme_type = nullptr;
+    GetStringFn g_orig_get_application_server_url = nullptr;
+    GetStringFn g_orig_get_tele_scope_server_url = nullptr;
+    GetStringFn g_orig_get_concert_server_url = nullptr;
+    GetStringFn g_orig_get_resource_server_url = nullptr;
+    GetStringFn g_orig_custom_preference_get_application_server_url = nullptr;
+    GetStringFn g_orig_custom_preference_get_tele_scope_server_url = nullptr;
+    GetStringFn g_orig_custom_preference_get_concert_server_url = nullptr;
+    GetStringFn g_orig_custom_preference_get_resource_server_url = nullptr;
     SetSchemeModeFn g_orig_custom_preference_set_scheme_mode = nullptr;
+    SetStringFn g_orig_custom_preference_set_application_server_url = nullptr;
+    SetStringFn g_orig_custom_preference_set_tele_scope_server_url = nullptr;
+    SetStringFn g_orig_custom_preference_set_concert_server_url = nullptr;
+    SetStringFn g_orig_custom_preference_set_resource_server_url = nullptr;
     volatile LONG g_logged_gameassembly = 0;
     volatile LONG g_exports_state = 0;
     ULONGLONG g_gameassembly_seen_tick = 0;
     volatile LONG g_scheme_hook_called = 0;
     volatile LONG g_cp_set_scheme_hook_called = 0;
-    void* g_cached_api_url_string = nullptr;
-    void* g_cached_asset_url_string = nullptr;
+    volatile LONG g_application_hook_called = 0;
+    volatile LONG g_tele_scope_hook_called = 0;
+    volatile LONG g_concert_hook_called = 0;
+    volatile LONG g_resource_hook_called = 0;
+    volatile LONG g_cp_application_hook_called = 0;
+    volatile LONG g_cp_tele_scope_hook_called = 0;
+    volatile LONG g_cp_concert_hook_called = 0;
+    volatile LONG g_cp_resource_hook_called = 0;
+    volatile LONG g_cp_set_application_hook_called = 0;
+    volatile LONG g_cp_set_tele_scope_hook_called = 0;
+    volatile LONG g_cp_set_concert_hook_called = 0;
+    volatile LONG g_cp_set_resource_hook_called = 0;
 
-    void prepare_cached_override_strings() {
+    void* make_api_url_string() {
         const auto& urls = config::get();
-        if (urls.api_url.empty() && urls.asset_url.empty()) {
-            return;
+        if (urls.api_url.empty()) {
+            return nullptr;
         }
-        if (!urls.api_url.empty() && !g_cached_api_url_string) {
-            g_cached_api_url_string = il2cpp_symbols::new_string(urls.api_url.c_str());
-            if (!g_cached_api_url_string) {
-                hook_log("[cgss-dmm-hook] failed to cache api_url string");
-            }
+        return il2cpp_symbols::new_string(urls.api_url.c_str());
+    }
+
+    void* make_asset_url_string() {
+        const auto& urls = config::get();
+        if (urls.asset_url.empty()) {
+            return nullptr;
         }
-        if (!urls.asset_url.empty() && !g_cached_asset_url_string) {
-            g_cached_asset_url_string = il2cpp_symbols::new_string(urls.asset_url.c_str());
-            if (!g_cached_asset_url_string) {
-                hook_log("[cgss-dmm-hook] failed to cache asset_url string");
-            }
-        }
+        return il2cpp_symbols::new_string(urls.asset_url.c_str());
     }
 
     int get_scheme_type_hook(const MethodInfo*) {
@@ -47,6 +67,94 @@ namespace {
             hook_log("[cgss-dmm-hook] GetSchemeType hook invoked");
         }
         return kHttpSchemeType;
+    }
+
+    void* get_application_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_application_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Stage.NetworkUtil.GetApplicationServerUrl hook invoked");
+        }
+        if (auto override_value = make_api_url_string()) {
+            return override_value;
+        }
+        return g_orig_get_application_server_url ? g_orig_get_application_server_url(method) : nullptr;
+    }
+
+    void* get_tele_scope_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_tele_scope_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Stage.NetworkUtil.GetTeleScopeServerUrl hook invoked");
+        }
+        if (auto override_value = make_api_url_string()) {
+            return override_value;
+        }
+        return g_orig_get_tele_scope_server_url ? g_orig_get_tele_scope_server_url(method) : nullptr;
+    }
+
+    void* get_concert_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_concert_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Stage.NetworkUtil.GetConcertServerUrl hook invoked");
+        }
+        if (auto override_value = make_api_url_string()) {
+            return override_value;
+        }
+        return g_orig_get_concert_server_url ? g_orig_get_concert_server_url(method) : nullptr;
+    }
+
+    void* get_resource_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_resource_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Stage.NetworkUtil.GetResourceServerUrl hook invoked");
+        }
+        if (auto override_value = make_asset_url_string()) {
+            return override_value;
+        }
+        return g_orig_get_resource_server_url ? g_orig_get_resource_server_url(method) : nullptr;
+    }
+
+    void* custom_preference_get_application_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_application_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.GetApplicationServerURL hook invoked");
+        }
+        if (auto override_value = make_api_url_string()) {
+            return override_value;
+        }
+        return g_orig_custom_preference_get_application_server_url
+            ? g_orig_custom_preference_get_application_server_url(method)
+            : nullptr;
+    }
+
+    void* custom_preference_get_tele_scope_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_tele_scope_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.GetTeleScopeServerURL hook invoked");
+        }
+        if (auto override_value = make_api_url_string()) {
+            return override_value;
+        }
+        return g_orig_custom_preference_get_tele_scope_server_url
+            ? g_orig_custom_preference_get_tele_scope_server_url(method)
+            : nullptr;
+    }
+
+    void* custom_preference_get_concert_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_concert_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.GetConcertServerURL hook invoked");
+        }
+        if (auto override_value = make_api_url_string()) {
+            return override_value;
+        }
+        return g_orig_custom_preference_get_concert_server_url
+            ? g_orig_custom_preference_get_concert_server_url(method)
+            : nullptr;
+    }
+
+    void* custom_preference_get_resource_server_url_hook(const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_resource_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.GetResourceServerURL hook invoked");
+        }
+        if (auto override_value = make_asset_url_string()) {
+            return override_value;
+        }
+        return g_orig_custom_preference_get_resource_server_url
+            ? g_orig_custom_preference_get_resource_server_url(method)
+            : nullptr;
     }
 
     void custom_preference_set_scheme_mode_hook(int scheme_type, const MethodInfo* method) {
@@ -60,9 +168,56 @@ namespace {
         }
     }
 
-    void patch_custom_preference_scheme() {
+    void custom_preference_set_application_server_url_hook(void* value, const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_set_application_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.SetApplicationServerURL hook invoked");
+        }
+        if (g_orig_custom_preference_set_application_server_url) {
+            if (auto override_value = make_api_url_string()) {
+                value = override_value;
+            }
+            g_orig_custom_preference_set_application_server_url(value, method);
+        }
+    }
+
+    void custom_preference_set_tele_scope_server_url_hook(void* value, const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_set_tele_scope_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.SetTeleScopeServerURL hook invoked");
+        }
+        if (g_orig_custom_preference_set_tele_scope_server_url) {
+            if (auto override_value = make_api_url_string()) {
+                value = override_value;
+            }
+            g_orig_custom_preference_set_tele_scope_server_url(value, method);
+        }
+    }
+
+    void custom_preference_set_concert_server_url_hook(void* value, const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_set_concert_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.SetConcertServerURL hook invoked");
+        }
+        if (g_orig_custom_preference_set_concert_server_url) {
+            if (auto override_value = make_api_url_string()) {
+                value = override_value;
+            }
+            g_orig_custom_preference_set_concert_server_url(value, method);
+        }
+    }
+
+    void custom_preference_set_resource_server_url_hook(void* value, const MethodInfo* method) {
+        if (InterlockedCompareExchange(&g_cp_set_resource_hook_called, 1, 0) == 0) {
+            hook_log("[cgss-dmm-hook] Cute.CustomPreference.SetResourceServerURL hook invoked");
+        }
+        if (g_orig_custom_preference_set_resource_server_url) {
+            if (auto override_value = make_asset_url_string()) {
+                value = override_value;
+            }
+            g_orig_custom_preference_set_resource_server_url(value, method);
+        }
+    }
+
+    void patch_custom_preference_scheme(bool log_success = true) {
         if (!config::get().force_http) {
-            hook_log("[cgss-dmm-hook] force_http disabled, skipping CustomPreference scheme patch");
             return;
         }
 
@@ -75,13 +230,15 @@ namespace {
         }
 
         if (il2cpp_symbols::set_static_int_field(custom_preference, "_schemeType", kHttpSchemeType)) {
-            hook_log("[cgss-dmm-hook] patched Cute.CustomPreference._schemeType=0");
+            if (log_success) {
+                hook_log("[cgss-dmm-hook] patched Cute.CustomPreference._schemeType=0");
+            }
         } else {
             hook_log("[cgss-dmm-hook] failed to patch Cute.CustomPreference._schemeType");
         }
     }
 
-    void apply_custom_preference_url_overrides() {
+    void apply_custom_preference_url_overrides(bool log_success = true) {
         const auto& urls = config::get();
         if (urls.api_url.empty() && urls.asset_url.empty()) {
             return;
@@ -96,7 +253,6 @@ namespace {
         }
 
         il2cpp_symbols::il2cpp_runtime_class_init(custom_preference);
-        prepare_cached_override_strings();
 
         if (config::get().force_http) {
             auto set_scheme_mode_addr = il2cpp_symbols::get_method_pointer(
@@ -105,7 +261,9 @@ namespace {
             if (set_scheme_mode_addr) {
                 auto set_scheme_mode = reinterpret_cast<SetSchemeModeFn>(set_scheme_mode_addr);
                 set_scheme_mode(kHttpSchemeType, nullptr);
-                hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetScemeMode(0)");
+                if (log_success) {
+                    hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetScemeMode(0)");
+                }
             }
         }
 
@@ -119,18 +277,24 @@ namespace {
             auto set_concert_addr = il2cpp_symbols::get_method_pointer(
                 "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetConcertServerURL", 1
             );
-            auto api_value = g_cached_api_url_string;
+            auto api_value = make_api_url_string();
             if (set_application_addr && api_value) {
                 reinterpret_cast<SetStringFn>(set_application_addr)(api_value, nullptr);
-                hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetApplicationServerURL");
+                if (log_success) {
+                    hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetApplicationServerURL");
+                }
             }
             if (set_tele_scope_addr && api_value) {
                 reinterpret_cast<SetStringFn>(set_tele_scope_addr)(api_value, nullptr);
-                hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetTeleScopeServerURL");
+                if (log_success) {
+                    hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetTeleScopeServerURL");
+                }
             }
             if (set_concert_addr && api_value) {
                 reinterpret_cast<SetStringFn>(set_concert_addr)(api_value, nullptr);
-                hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetConcertServerURL");
+                if (log_success) {
+                    hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetConcertServerURL");
+                }
             }
         }
 
@@ -138,10 +302,12 @@ namespace {
             auto set_resource_addr = il2cpp_symbols::get_method_pointer(
                 "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetResourceServerURL", 1
             );
-            auto asset_value = g_cached_asset_url_string;
+            auto asset_value = make_asset_url_string();
             if (set_resource_addr && asset_value) {
                 reinterpret_cast<SetStringFn>(set_resource_addr)(asset_value, nullptr);
-                hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetResourceServerURL");
+                if (log_success) {
+                    hook_log("[cgss-dmm-hook] applied Cute.CustomPreference.SetResourceServerURL");
+                }
             }
         }
     }
@@ -177,12 +343,11 @@ namespace {
         }
 
         if (config::get().force_http) {
-            patch_custom_preference_scheme();
+            patch_custom_preference_scheme(true);
         }
         const auto& urls = config::get();
         if (!urls.api_url.empty() || !urls.asset_url.empty()) {
-            prepare_cached_override_strings();
-            apply_custom_preference_url_overrides();
+            apply_custom_preference_url_overrides(true);
         }
 
         if (!urls.force_http) {
@@ -198,6 +363,45 @@ namespace {
             hook_log("[cgss-dmm-hook] failed to resolve Stage.NetworkUtil.GetSchemeType");
             return;
         }
+        auto cp_set_scheme_mode_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetScemeMode", 1
+        );
+        auto get_application_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetApplicationServerUrl", 0
+        );
+        auto get_tele_scope_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetTeleScopeServerUrl", 0
+        );
+        auto get_concert_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetConcertServerUrl", 0
+        );
+        auto get_resource_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetResourceServerUrl", 0
+        );
+        auto cp_get_application_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "GetApplicationServerURL", 0
+        );
+        auto cp_get_tele_scope_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "GetTeleScopeServerURL", 0
+        );
+        auto cp_get_concert_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "GetConcertServerURL", 0
+        );
+        auto cp_get_resource_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "GetResourceServerURL", 0
+        );
+        auto cp_set_application_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetApplicationServerURL", 1
+        );
+        auto cp_set_tele_scope_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetTeleScopeServerURL", 1
+        );
+        auto cp_set_concert_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetConcertServerURL", 1
+        );
+        auto cp_set_resource_server_url_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetResourceServerURL", 1
+        );
 
         auto mh_status = MH_Initialize();
         if (mh_status != MH_OK && mh_status != MH_ERROR_ALREADY_INITIALIZED) {
@@ -219,6 +423,109 @@ namespace {
         if (enable_status != MH_OK && enable_status != MH_ERROR_ENABLED) {
             hook_log("[cgss-dmm-hook] MH_EnableHook failed");
             return;
+        }
+
+        auto hook_method = [](uintptr_t address, void* detour, void** original, const char* name) {
+            if (!address) {
+                hook_logf("[cgss-dmm-hook] failed to resolve %s", name);
+                return;
+            }
+            auto create_status = MH_CreateHook(reinterpret_cast<void*>(address), detour, original);
+            if (create_status != MH_OK && create_status != MH_ERROR_ALREADY_CREATED) {
+                hook_logf("[cgss-dmm-hook] MH_CreateHook failed for %s", name);
+                return;
+            }
+            auto enable_status = MH_EnableHook(reinterpret_cast<void*>(address));
+            if (enable_status == MH_OK || enable_status == MH_ERROR_ENABLED) {
+                hook_logf("[cgss-dmm-hook] hooked %s", name);
+            } else {
+                hook_logf("[cgss-dmm-hook] MH_EnableHook failed for %s", name);
+            }
+        };
+
+        if (urls.force_http) {
+            hook_method(
+                cp_set_scheme_mode_addr,
+                reinterpret_cast<void*>(&custom_preference_set_scheme_mode_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_set_scheme_mode),
+                "Cute.CustomPreference.SetScemeMode"
+            );
+        }
+        if (!urls.api_url.empty()) {
+            hook_method(
+                get_application_server_url_addr,
+                reinterpret_cast<void*>(&get_application_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_get_application_server_url),
+                "Stage.NetworkUtil.GetApplicationServerUrl"
+            );
+            hook_method(
+                get_tele_scope_server_url_addr,
+                reinterpret_cast<void*>(&get_tele_scope_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_get_tele_scope_server_url),
+                "Stage.NetworkUtil.GetTeleScopeServerUrl"
+            );
+            hook_method(
+                get_concert_server_url_addr,
+                reinterpret_cast<void*>(&get_concert_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_get_concert_server_url),
+                "Stage.NetworkUtil.GetConcertServerUrl"
+            );
+            hook_method(
+                cp_get_application_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_get_application_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_get_application_server_url),
+                "Cute.CustomPreference.GetApplicationServerURL"
+            );
+            hook_method(
+                cp_get_tele_scope_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_get_tele_scope_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_get_tele_scope_server_url),
+                "Cute.CustomPreference.GetTeleScopeServerURL"
+            );
+            hook_method(
+                cp_get_concert_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_get_concert_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_get_concert_server_url),
+                "Cute.CustomPreference.GetConcertServerURL"
+            );
+            hook_method(
+                cp_set_application_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_set_application_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_set_application_server_url),
+                "Cute.CustomPreference.SetApplicationServerURL"
+            );
+            hook_method(
+                cp_set_tele_scope_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_set_tele_scope_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_set_tele_scope_server_url),
+                "Cute.CustomPreference.SetTeleScopeServerURL"
+            );
+            hook_method(
+                cp_set_concert_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_set_concert_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_set_concert_server_url),
+                "Cute.CustomPreference.SetConcertServerURL"
+            );
+        }
+        if (!urls.asset_url.empty()) {
+            hook_method(
+                get_resource_server_url_addr,
+                reinterpret_cast<void*>(&get_resource_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_get_resource_server_url),
+                "Stage.NetworkUtil.GetResourceServerUrl"
+            );
+            hook_method(
+                cp_get_resource_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_get_resource_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_get_resource_server_url),
+                "Cute.CustomPreference.GetResourceServerURL"
+            );
+            hook_method(
+                cp_set_resource_server_url_addr,
+                reinterpret_cast<void*>(&custom_preference_set_resource_server_url_hook),
+                reinterpret_cast<void**>(&g_orig_custom_preference_set_resource_server_url),
+                "Cute.CustomPreference.SetResourceServerURL"
+            );
         }
 
         InterlockedExchange(&g_hook_installed, 1);
