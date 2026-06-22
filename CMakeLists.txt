@@ -80,3 +80,10 @@ if(MINGW)
         "-static-libstdc++"
     )
 endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(cgss-borderless-helper PRIVATE
+        "-Wl,--gc-sections"
+        "-s"
+    )
+endif()

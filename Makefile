@@ -26,6 +26,7 @@ else
   CFLAGS += -O2 -ffunction-sections -fdata-sections
   CXXFLAGS += -O2 -ffunction-sections -fdata-sections
   LDFLAGS += -Wl,--gc-sections -s
+  HELPER_LDFLAGS += -Wl,--gc-sections -s
 endif
 
 C_SRCS := \
