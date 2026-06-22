@@ -1,6 +1,6 @@
 {
   "force_http": true,
-  "api_url": "apis.game.starlight-stage.jp/",
+  "api_url": "",
   "asset_url": "asset-starlight-stage.akamaized.net/",
   "launch_borderless_helper": true
 }

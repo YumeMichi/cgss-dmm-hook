@@ -8,6 +8,6 @@ namespace config {
         bool launch_borderless_helper = true;
     };
 
-    void load();
+    bool load();
     const OverrideUrls& get();
 }

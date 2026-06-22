@@ -6,6 +6,10 @@ namespace config {
     namespace {
         OverrideUrls g_urls;
         bool g_loaded = false;
+        constexpr const wchar_t* kConfigErrorTitleW = L"cgss-dmm-hook";
+        constexpr const wchar_t* kApiUrlRequiredMessageW =
+            L"config.json \u4E2D\u5FC5\u987B\u8BBE\u7F6E\u975E\u7A7A api_url\u3002";
+        constexpr const char* kDefaultAssetUrl = "asset-starlight-stage.akamaized.net/";
 
         std::string get_config_path() {
             char path[MAX_PATH] = {};
@@ -58,7 +62,7 @@ namespace config {
             return
                 "{\r\n"
                 "  \"force_http\": true,\r\n"
-                "  \"api_url\": \"apis.game.starlight-stage.jp/\",\r\n"
+                "  \"api_url\": \"\",\r\n"
                 "  \"asset_url\": \"asset-starlight-stage.akamaized.net/\",\r\n"
                 "  \"launch_borderless_helper\": true\r\n"
                 "}\r\n";
@@ -79,16 +83,16 @@ namespace config {
         }
     }
 
-    void load() {
+    bool load() {
         if (g_loaded) {
-            return;
+            return !g_urls.api_url.empty();
         }
         g_loaded = true;
 
         const auto config_path = get_config_path();
         if (config_path.empty()) {
             hook_log("[cgss-dmm-hook] failed to resolve config.json path");
-            return;
+            return false;
         }
 
         std::ifstream config_stream(config_path);
@@ -101,7 +105,7 @@ namespace config {
             } else {
                 hook_log("[cgss-dmm-hook] config.json not found, failed to generate default config.json");
             }
-            return;
+            return false;
         }
 
         rapidjson::IStreamWrapper wrapper(config_stream);
@@ -109,7 +113,7 @@ namespace config {
         document.ParseStream(wrapper);
         if (document.HasParseError() || !document.IsObject()) {
             hook_log("[cgss-dmm-hook] failed to parse config.json");
-            return;
+            return false;
         }
 
         read_bool(document, "force_http", g_urls.force_http);
@@ -125,10 +129,23 @@ namespace config {
 
         if (!g_urls.api_url.empty()) {
             hook_logf("[cgss-dmm-hook] normalized api_url=%s", g_urls.api_url.c_str());
+        } else {
+            hook_log("[cgss-dmm-hook] api_url is empty");
+            MessageBoxW(
+                nullptr,
+                kApiUrlRequiredMessageW,
+                kConfigErrorTitleW,
+                MB_OK | MB_ICONERROR | MB_TOPMOST
+            );
+            return false;
         }
-        if (!g_urls.asset_url.empty()) {
+        if (g_urls.asset_url.empty()) {
+            g_urls.asset_url = kDefaultAssetUrl;
+            hook_logf("[cgss-dmm-hook] asset_url is empty, fallback to %s", g_urls.asset_url.c_str());
+        } else {
             hook_logf("[cgss-dmm-hook] normalized asset_url=%s", g_urls.asset_url.c_str());
         }
+        return true;
     }
 
     const OverrideUrls& get() {

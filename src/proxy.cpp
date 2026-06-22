@@ -343,7 +343,11 @@ namespace {
             hook_log("[cgss-dmm-hook] non-game process detected, skipping hook/helper startup");
             return 0;
         }
-        config::load();
+        if (!config::load()) {
+            hook_log("[cgss-dmm-hook] config validation failed, terminating process");
+            TerminateProcess(GetCurrentProcess(), 1);
+            return 0;
+        }
         start_borderless_helper();
         start_hook_thread();
         return 0;

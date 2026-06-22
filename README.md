@@ -43,7 +43,7 @@ make
 ```json
 {
   "force_http": true,
-  "api_url": "apis.game.starlight-stage.jp/",
+  "api_url": "",
   "asset_url": "asset-starlight-stage.akamaized.net/",
   "launch_borderless_helper": true
 }
@@ -51,8 +51,8 @@ make
 
 字段说明：
 - `force_http`：是否强制将 scheme 改成 `http`。默认 `true`
-- `api_url`：API 主机名，按原始字段格式填写，不带 scheme
-- `asset_url`：资源主机名，按原始字段格式填写，不带 scheme
+- `api_url`：必填。API 主机名，按原始字段格式填写，不带 scheme；留空时程序会弹窗提示
+- `asset_url`：资源主机名，按原始字段格式填写，不带 scheme；留空时回落到 `asset-starlight-stage.akamaized.net/`
 - `launch_borderless_helper`：是否自动启动 `cgss-borderless-helper.exe`。默认 `true`
 
 **使用方法**
