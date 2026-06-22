@@ -10,7 +10,7 @@ namespace {
     using SetSchemeModeFn = void (*)(int, const MethodInfo*);
     constexpr int kHttpSchemeType = 0;
     constexpr DWORD kHookPollIntervalMs = 500;
-    constexpr DWORD kGameAssemblySettleDelayMs = 5000;
+    constexpr DWORD kGameAssemblySettleDelayMs = 100;
     constexpr int kHookPollMaxAttempts = 600;
 
     volatile LONG g_hook_installed = 0;
