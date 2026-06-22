@@ -57,7 +57,7 @@ namespace config {
         std::string make_default_config_json() {
             return
                 "{\r\n"
-                "  \"force_http\": false,\r\n"
+                "  \"force_http\": true,\r\n"
                 "  \"api_url\": \"apis.game.starlight-stage.jp/\",\r\n"
                 "  \"asset_url\": \"asset-starlight-stage.akamaized.net/\",\r\n"
                 "  \"launch_borderless_helper\": true\r\n"

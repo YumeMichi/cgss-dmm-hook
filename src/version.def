@@ -1,4 +1,17 @@
 EXPORTS
     GetFileVersionInfoA=GetFileVersionInfoA_EXPORT
+    GetFileVersionInfoW=GetFileVersionInfoW_EXPORT
+    GetFileVersionInfoExA=GetFileVersionInfoExA_EXPORT
+    GetFileVersionInfoExW=GetFileVersionInfoExW_EXPORT
     GetFileVersionInfoSizeA=GetFileVersionInfoSizeA_EXPORT
+    GetFileVersionInfoSizeW=GetFileVersionInfoSizeW_EXPORT
+    GetFileVersionInfoSizeExA=GetFileVersionInfoSizeExA_EXPORT
+    GetFileVersionInfoSizeExW=GetFileVersionInfoSizeExW_EXPORT
     VerQueryValueA=VerQueryValueA_EXPORT
+    VerQueryValueW=VerQueryValueW_EXPORT
+    VerFindFileA=VerFindFileA_EXPORT
+    VerFindFileW=VerFindFileW_EXPORT
+    VerInstallFileA=VerInstallFileA_EXPORT
+    VerInstallFileW=VerInstallFileW_EXPORT
+    VerLanguageNameA=VerLanguageNameA_EXPORT
+    VerLanguageNameW=VerLanguageNameW_EXPORT

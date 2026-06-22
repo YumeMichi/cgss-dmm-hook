@@ -17,6 +17,7 @@ namespace {
     HWND g_main_window = nullptr;
     bool g_borderless_active = false;
     bool g_saved_state_valid = false;
+    bool g_borderless_drift_logged = false;
     RECT g_saved_window_rect = {};
     LONG_PTR g_saved_style = 0;
     LONG_PTR g_saved_exstyle = 0;
@@ -298,11 +299,13 @@ namespace {
 
         if (g_borderless_active) {
             g_borderless_active = false;
+            g_borderless_drift_logged = false;
             restore_window(hwnd);
             return;
         }
 
         g_borderless_active = true;
+        g_borderless_drift_logged = false;
         helper_logf(
             "[cgss-borderless-helper] borderless enabled monitor=%ls rect=(%ld,%ld)-(%ld,%ld)",
             monitor_info.szDevice,
@@ -370,8 +373,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         DWORD now = GetTickCount();
         if (g_borderless_active && now - last_maintain_tick >= kMaintainIntervalMs) {
             if (needs_borderless_reapply(g_main_window)) {
-                helper_logf("[cgss-borderless-helper] detected borderless drift, reapplying");
+                if (!g_borderless_drift_logged) {
+                    helper_logf("[cgss-borderless-helper] detected borderless drift, reapplying");
+                    g_borderless_drift_logged = true;
+                }
                 apply_borderless_once(g_main_window);
+            } else {
+                g_borderless_drift_logged = false;
             }
             last_maintain_tick = now;
         }
