@@ -19,6 +19,7 @@ namespace {
     bool g_saved_state_valid = false;
     bool g_borderless_drift_logged = false;
     RECT g_saved_window_rect = {};
+    RECT g_saved_client_rect = {};
     LONG_PTR g_saved_style = 0;
     LONG_PTR g_saved_exstyle = 0;
     DWORD g_target_process_id = 0;
@@ -170,21 +171,76 @@ namespace {
         return true;
     }
 
+    RECT get_window_rect_for_client_rect(HWND hwnd, const RECT& target_client_rect, LONG_PTR style, LONG_PTR exstyle) {
+        RECT window_rect = {
+            target_client_rect.left,
+            target_client_rect.top,
+            target_client_rect.right,
+            target_client_rect.bottom,
+        };
+
+        using AdjustWindowRectExForDpiFn = BOOL(WINAPI*)(LPRECT, DWORD, BOOL, DWORD, UINT);
+        auto user32 = GetModuleHandleW(L"user32.dll");
+        auto adjust_for_dpi = user32
+            ? reinterpret_cast<AdjustWindowRectExForDpiFn>(GetProcAddress(user32, "AdjustWindowRectExForDpi"))
+            : nullptr;
+
+        UINT dpi = 96;
+        using GetDpiForWindowFn = UINT(WINAPI*)(HWND);
+        auto get_dpi_for_window = user32
+            ? reinterpret_cast<GetDpiForWindowFn>(GetProcAddress(user32, "GetDpiForWindow"))
+            : nullptr;
+        if (get_dpi_for_window) {
+            dpi = get_dpi_for_window(hwnd);
+        }
+
+        if (adjust_for_dpi) {
+            adjust_for_dpi(&window_rect, static_cast<DWORD>(style), FALSE, static_cast<DWORD>(exstyle), dpi);
+        } else {
+            AdjustWindowRectEx(&window_rect, static_cast<DWORD>(style), FALSE, static_cast<DWORD>(exstyle));
+        }
+        return window_rect;
+    }
+
+    bool get_client_rect_in_screen(HWND hwnd, RECT& rect) {
+        RECT client_rect = {};
+        if (!GetClientRect(hwnd, &client_rect)) {
+            return false;
+        }
+
+        POINT top_left = {client_rect.left, client_rect.top};
+        POINT bottom_right = {client_rect.right, client_rect.bottom};
+        if (!ClientToScreen(hwnd, &top_left) || !ClientToScreen(hwnd, &bottom_right)) {
+            return false;
+        }
+
+        rect.left = top_left.x;
+        rect.top = top_left.y;
+        rect.right = bottom_right.x;
+        rect.bottom = bottom_right.y;
+        return true;
+    }
+
     void save_window_state(HWND hwnd) {
         if (g_saved_state_valid) {
             return;
         }
 
         GetWindowRect(hwnd, &g_saved_window_rect);
+        get_client_rect_in_screen(hwnd, g_saved_client_rect);
         g_saved_style = GetWindowLongPtrW(hwnd, GWL_STYLE);
         g_saved_exstyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
         g_saved_state_valid = true;
         helper_logf(
-            "[cgss-borderless-helper] saved window rect=(%ld,%ld)-(%ld,%ld)",
+            "[cgss-borderless-helper] saved window rect=(%ld,%ld)-(%ld,%ld) client=(%ld,%ld)-(%ld,%ld)",
             static_cast<long>(g_saved_window_rect.left),
             static_cast<long>(g_saved_window_rect.top),
             static_cast<long>(g_saved_window_rect.right),
-            static_cast<long>(g_saved_window_rect.bottom)
+            static_cast<long>(g_saved_window_rect.bottom),
+            static_cast<long>(g_saved_client_rect.left),
+            static_cast<long>(g_saved_client_rect.top),
+            static_cast<long>(g_saved_client_rect.right),
+            static_cast<long>(g_saved_client_rect.bottom)
         );
     }
 
@@ -205,64 +261,66 @@ namespace {
                                ~(WS_EX_DLGMODALFRAME | WS_EX_COMPOSITED | WS_EX_WINDOWEDGE |
                                  WS_EX_CLIENTEDGE | WS_EX_LAYERED | WS_EX_STATICEDGE |
                                  WS_EX_TOOLWINDOW | WS_EX_APPWINDOW);
+        RECT target_window_rect = get_window_rect_for_client_rect(hwnd, monitor_rect, new_style, new_exstyle);
 
-        SetWindowPos(
-            hwnd,
-            nullptr,
-            monitor_rect.left,
-            monitor_rect.top,
-            monitor_rect.right - monitor_rect.left,
-            monitor_rect.bottom - monitor_rect.top,
-            SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING
-        );
-
-        Sleep(kDelayedStyleApplyMs);
         SetWindowLongPtrW(hwnd, GWL_STYLE, new_style);
         SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new_exstyle);
         SetWindowPos(
             hwnd,
             nullptr,
-            monitor_rect.left,
-            monitor_rect.top,
-            monitor_rect.right - monitor_rect.left,
-            monitor_rect.bottom - monitor_rect.top,
+            target_window_rect.left,
+            target_window_rect.top,
+            target_window_rect.right - target_window_rect.left,
+            target_window_rect.bottom - target_window_rect.top,
             SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING
         );
 
+        Sleep(kDelayedStyleApplyMs);
+
         RECT actual_rect = {};
         GetWindowRect(hwnd, &actual_rect);
+        RECT actual_client_rect = {};
+        get_client_rect_in_screen(hwnd, actual_client_rect);
         helper_logf(
-            "[cgss-borderless-helper] applied borderless class=%ls monitor=%ls target=(%ld,%ld)-(%ld,%ld) actual=(%ld,%ld)-(%ld,%ld)",
+            "[cgss-borderless-helper] applied borderless class=%ls monitor=%ls target-client=(%ld,%ld)-(%ld,%ld) target-window=(%ld,%ld)-(%ld,%ld) actual-window=(%ld,%ld)-(%ld,%ld) actual-client=(%ld,%ld)-(%ld,%ld)",
             get_window_class_name(hwnd).c_str(),
             monitor_info.szDevice,
             static_cast<long>(monitor_rect.left),
             static_cast<long>(monitor_rect.top),
             static_cast<long>(monitor_rect.right),
             static_cast<long>(monitor_rect.bottom),
+            static_cast<long>(target_window_rect.left),
+            static_cast<long>(target_window_rect.top),
+            static_cast<long>(target_window_rect.right),
+            static_cast<long>(target_window_rect.bottom),
             static_cast<long>(actual_rect.left),
             static_cast<long>(actual_rect.top),
             static_cast<long>(actual_rect.right),
-            static_cast<long>(actual_rect.bottom)
+            static_cast<long>(actual_rect.bottom),
+            static_cast<long>(actual_client_rect.left),
+            static_cast<long>(actual_client_rect.top),
+            static_cast<long>(actual_client_rect.right),
+            static_cast<long>(actual_client_rect.bottom)
         );
     }
 
     bool needs_borderless_reapply(HWND hwnd) {
-        RECT expected_rect = {};
-        if (!get_monitor_rect(hwnd, expected_rect)) {
+        RECT expected_client_rect = {};
+        if (!get_monitor_rect(hwnd, expected_client_rect)) {
             return false;
         }
 
-        RECT current_rect = {};
-        if (!GetWindowRect(hwnd, &current_rect)) {
+        RECT current_client_rect = {};
+        if (!get_client_rect_in_screen(hwnd, current_client_rect)) {
             return false;
         }
 
         LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
         const bool has_border = (style & (WS_CAPTION | WS_THICKFRAME | WS_SYSMENU)) != 0;
-        const bool rect_mismatch = current_rect.left != expected_rect.left ||
-                                   current_rect.top != expected_rect.top ||
-                                   current_rect.right != expected_rect.right ||
-                                   current_rect.bottom != expected_rect.bottom;
+        const bool rect_mismatch = current_client_rect.left != expected_client_rect.left ||
+                                   current_client_rect.top != expected_client_rect.top ||
+                                   current_client_rect.right != expected_client_rect.right ||
+                                   current_client_rect.bottom != expected_client_rect.bottom;
         return has_border || rect_mismatch;
     }
 
