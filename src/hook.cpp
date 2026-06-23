@@ -350,22 +350,23 @@ namespace {
             apply_custom_preference_url_overrides(true);
         }
 
-        if (!urls.force_http) {
-            InterlockedExchange(&g_hook_installed, 1);
+        uintptr_t get_scheme_type_addr = 0;
+        uintptr_t cp_set_scheme_mode_addr = 0;
+        if (urls.force_http) {
+            get_scheme_type_addr = il2cpp_symbols::get_method_pointer(
+                "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetSchemeType", 0
+            );
+            if (!get_scheme_type_addr) {
+                hook_log("[cgss-dmm-hook] failed to resolve Stage.NetworkUtil.GetSchemeType");
+                return;
+            }
+            cp_set_scheme_mode_addr = il2cpp_symbols::get_method_pointer(
+                "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetScemeMode", 1
+            );
+        } else {
             hook_log("[cgss-dmm-hook] force_http disabled, keeping original scheme");
-            return;
         }
 
-        auto get_scheme_type_addr = il2cpp_symbols::get_method_pointer(
-            "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetSchemeType", 0
-        );
-        if (!get_scheme_type_addr) {
-            hook_log("[cgss-dmm-hook] failed to resolve Stage.NetworkUtil.GetSchemeType");
-            return;
-        }
-        auto cp_set_scheme_mode_addr = il2cpp_symbols::get_method_pointer(
-            "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetScemeMode", 1
-        );
         auto get_application_server_url_addr = il2cpp_symbols::get_method_pointer(
             "Assembly-CSharp.dll", "Stage", "NetworkUtil", "GetApplicationServerUrl", 0
         );
@@ -409,20 +410,22 @@ namespace {
             return;
         }
 
-        auto create_status = MH_CreateHook(
-            reinterpret_cast<void*>(get_scheme_type_addr),
-            reinterpret_cast<void*>(&get_scheme_type_hook),
-            reinterpret_cast<void**>(&g_orig_get_scheme_type)
-        );
-        if (create_status != MH_OK && create_status != MH_ERROR_ALREADY_CREATED) {
-            hook_log("[cgss-dmm-hook] MH_CreateHook failed");
-            return;
-        }
+        if (urls.force_http) {
+            auto create_status = MH_CreateHook(
+                reinterpret_cast<void*>(get_scheme_type_addr),
+                reinterpret_cast<void*>(&get_scheme_type_hook),
+                reinterpret_cast<void**>(&g_orig_get_scheme_type)
+            );
+            if (create_status != MH_OK && create_status != MH_ERROR_ALREADY_CREATED) {
+                hook_log("[cgss-dmm-hook] MH_CreateHook failed");
+                return;
+            }
 
-        auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_scheme_type_addr));
-        if (enable_status != MH_OK && enable_status != MH_ERROR_ENABLED) {
-            hook_log("[cgss-dmm-hook] MH_EnableHook failed");
-            return;
+            auto enable_status = MH_EnableHook(reinterpret_cast<void*>(get_scheme_type_addr));
+            if (enable_status != MH_OK && enable_status != MH_ERROR_ENABLED) {
+                hook_log("[cgss-dmm-hook] MH_EnableHook failed");
+                return;
+            }
         }
 
         auto hook_method = [](uintptr_t address, void* detour, void** original, const char* name) {
@@ -529,7 +532,9 @@ namespace {
         }
 
         InterlockedExchange(&g_hook_installed, 1);
-        hook_log("[cgss-dmm-hook] hooked Stage.NetworkUtil.GetSchemeType");
+        if (urls.force_http) {
+            hook_log("[cgss-dmm-hook] hooked Stage.NetworkUtil.GetSchemeType");
+        }
     }
 
     DWORD WINAPI init_thread(void*) {
