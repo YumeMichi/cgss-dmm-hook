@@ -23,6 +23,7 @@ add_library(version SHARED
 
 add_executable(cgss-borderless-helper WIN32
     src/helper_main.cpp
+    src/helper_version.rc
 )
 
 target_include_directories(version PRIVATE

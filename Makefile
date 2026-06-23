@@ -46,12 +46,14 @@ HELPER_CXX_SRCS := \
 	src/helper_main.cpp
 
 RC_SRCS := src/version.rc
+HELPER_RC_SRCS := src/helper_version.rc
 DEF_FILE := src/version.def
 
 C_OBJS := $(patsubst %.c,$(OBJ_DIR)/%.o,$(C_SRCS))
 CXX_OBJS := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(CXX_SRCS))
 HELPER_CXX_OBJS := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(HELPER_CXX_SRCS))
 RC_OBJS := $(patsubst %.rc,$(OBJ_DIR)/%.res,$(RC_SRCS))
+HELPER_RC_OBJS := $(patsubst %.rc,$(OBJ_DIR)/%.res,$(HELPER_RC_SRCS))
 OBJS := $(C_OBJS) $(CXX_OBJS) $(RC_OBJS)
 
 .PHONY: all release debug clean
@@ -65,9 +67,9 @@ $(TARGET): $(OBJS) $(DEF_FILE)
 	@mkdir -p $(dir $@)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(DEF_FILE) $(LDLIBS)
 
-$(HELPER_TARGET): $(HELPER_CXX_OBJS)
+$(HELPER_TARGET): $(HELPER_CXX_OBJS) $(HELPER_RC_OBJS)
 	@mkdir -p $(dir $@)
-	$(CXX) $(HELPER_LDFLAGS) -o $@ $(HELPER_CXX_OBJS) $(HELPER_LDLIBS)
+	$(CXX) $(HELPER_LDFLAGS) -o $@ $(HELPER_CXX_OBJS) $(HELPER_RC_OBJS) $(HELPER_LDLIBS)
 
 $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
