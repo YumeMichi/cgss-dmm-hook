@@ -7,6 +7,7 @@ BUILD ?= release
 CC := x86_64-w64-mingw32-gcc
 CXX := x86_64-w64-mingw32-g++
 WINDRES := x86_64-w64-mingw32-windres
+WINPTHREAD_DLL := /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll
 
 INCLUDES := -Isrc -Ideps/minhook/include -Ideps/minhook/src -Ideps/minhook/src/hde
 INCLUDES += -Ideps/rapidjson/include
@@ -58,8 +59,8 @@ OBJS := $(C_OBJS) $(CXX_OBJS) $(RC_OBJS)
 
 .PHONY: all release debug clean
 
-all: $(TARGET) $(HELPER_TARGET)
-release: $(TARGET) $(HELPER_TARGET)
+all: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll
+release: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll
 debug:
 	$(MAKE) BUILD=debug
 
@@ -70,6 +71,10 @@ $(TARGET): $(OBJS) $(DEF_FILE)
 $(HELPER_TARGET): $(HELPER_CXX_OBJS) $(HELPER_RC_OBJS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(HELPER_LDFLAGS) -o $@ $(HELPER_CXX_OBJS) $(HELPER_RC_OBJS) $(HELPER_LDLIBS)
+
+$(BUILD_DIR)/libwinpthread-1.dll:
+	@mkdir -p $(dir $@)
+	cp "$(WINPTHREAD_DLL)" "$@"
 
 $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)

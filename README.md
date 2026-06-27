@@ -38,6 +38,7 @@ make
 **输出**
 - `build/version.dll`
 - `build/cgss-borderless-helper.exe`
+- `build/libwinpthread-1.dll`
 
 **config.json**
 ```json
@@ -56,7 +57,7 @@ make
 - `launch_borderless_helper`：是否自动启动 `cgss-borderless-helper.exe`。默认 `true`
 
 **使用方法**
-1. 将 `build/version.dll` 和 `build/cgss-borderless-helper.exe` 一起复制到 `imascgstage.exe` 同目录
+1. 将 `build/version.dll`、`build/cgss-borderless-helper.exe` 和 `build/libwinpthread-1.dll` 一起复制到 `imascgstage.exe` 同目录
 2. 如需覆盖地址，在同目录放置 `config.json`
 3. 启动游戏
 4. 进入游戏后按 `F11` 切换无边框全屏
@@ -66,6 +67,7 @@ make
 - `cgss-borderless-helper.exe` 现在只负责外部窗口 borderless 行为，不再修改 Unity 内部 `Screen.SetResolution`。
 - 这样更接近 Borderless Gaming 的工作方式，也能减少退出时的干扰。
 - `version.dll` 只在 `imascgstage.exe` 主进程中继续启动 hook 和 helper；被其他进程间接加载时会跳过。
+- 不要只单独分发 `version.dll`。当前构建依赖 `libwinpthread-1.dll`，如果目标机器缺少它，Windows 会在进入代理代码前直接拒绝加载，此时通常表现为游戏无法启动，且不会生成任何日志。
 
 **致谢**
 - 本项目的 `version.dll` 代理注入思路与运行时 IL2CPP hook 方向，受 `gkms-localify-dmm` 项目启发。

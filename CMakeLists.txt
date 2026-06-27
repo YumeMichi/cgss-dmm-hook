@@ -88,3 +88,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
         "-s"
     )
 endif()
+
+if(MINGW)
+    add_custom_command(TARGET version POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll
+            $<TARGET_FILE_DIR:version>/libwinpthread-1.dll
+    )
+endif()
