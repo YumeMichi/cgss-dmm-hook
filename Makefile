@@ -4,7 +4,9 @@ BUILD_DIR := build
 OBJ_DIR := $(BUILD_DIR)/obj
 PACKAGE_DIR := $(BUILD_DIR)/package
 PACKAGE_NAME := cgss-dmm-hook
+PACKAGE_VERSION := 2.1
 PACKAGE_ROOT := $(PACKAGE_DIR)/$(PACKAGE_NAME)
+PACKAGE_ZIP := $(PACKAGE_DIR)/$(PACKAGE_NAME)-v$(PACKAGE_VERSION).zip
 BUILD ?= release
 
 CC := x86_64-w64-mingw32-gcc
@@ -62,11 +64,11 @@ OBJS := $(C_OBJS) $(CXX_OBJS) $(RC_OBJS)
 
 .PHONY: all release debug package clean
 
-all: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll
-release: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll
+all: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll $(PACKAGE_ZIP)
+release: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll $(PACKAGE_ZIP)
 debug:
 	$(MAKE) BUILD=debug
-package: $(PACKAGE_DIR)/$(PACKAGE_NAME).zip
+package: $(PACKAGE_ZIP)
 
 $(TARGET): $(OBJS) $(DEF_FILE)
 	@mkdir -p $(dir $@)
@@ -80,7 +82,7 @@ $(BUILD_DIR)/libwinpthread-1.dll:
 	@mkdir -p $(dir $@)
 	cp "$(WINPTHREAD_DLL)" "$@"
 
-$(PACKAGE_DIR)/$(PACKAGE_NAME).zip: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll config.json.example README.md LICENSE THIRD_PARTY_NOTICES.md
+$(PACKAGE_ZIP): $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll config.json.example README.md LICENSE THIRD_PARTY_NOTICES.md
 	rm -rf "$(PACKAGE_ROOT)"
 	@mkdir -p "$(PACKAGE_ROOT)"
 	cp "$(TARGET)" "$(PACKAGE_ROOT)/version.dll"
@@ -88,7 +90,8 @@ $(PACKAGE_DIR)/$(PACKAGE_NAME).zip: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libw
 	cp "$(BUILD_DIR)/libwinpthread-1.dll" "$(PACKAGE_ROOT)/libwinpthread-1.dll"
 	cp config.json.example "$(PACKAGE_ROOT)/config.json.example"
 	cp README.md LICENSE THIRD_PARTY_NOTICES.md "$(PACKAGE_ROOT)/"
-	cd "$(PACKAGE_DIR)" && zip -qr "$(PACKAGE_NAME).zip" "$(PACKAGE_NAME)"
+	rm -f "$(PACKAGE_ZIP)"
+	cd "$(PACKAGE_DIR)" && zip -qr "$(notdir $(PACKAGE_ZIP))" "$(PACKAGE_NAME)"
 
 $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)

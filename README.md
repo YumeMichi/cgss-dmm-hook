@@ -34,6 +34,7 @@ cmake --build build
 ```sh
 make
 ```
+默认也会同时生成可分发压缩包。
 
 生成可分发压缩包：
 ```sh
@@ -44,7 +45,7 @@ make package
 - `build/version.dll`
 - `build/cgss-borderless-helper.exe`
 - `build/libwinpthread-1.dll`
-- `build/package/cgss-dmm-hook.zip`
+- `build/package/cgss-dmm-hook-v2.1.zip`
 
 **config.json**
 ```json
@@ -74,7 +75,7 @@ make package
 - 这样更接近 Borderless Gaming 的工作方式，也能减少退出时的干扰。
 - `version.dll` 只在 `imascgstage.exe` 主进程中继续启动 hook 和 helper；被其他进程间接加载时会跳过。
 - 不要只单独分发 `version.dll`。当前构建依赖 `libwinpthread-1.dll`，如果目标机器缺少它，Windows 会在进入代理代码前直接拒绝加载，此时通常表现为游戏无法启动，且不会生成任何日志。
-- `make package` 会自动把运行所需文件整理到 `build/package/cgss-dmm-hook/`，并生成 `build/package/cgss-dmm-hook.zip`。
+- `make` 和 `make package` 都会自动把运行所需文件整理到 `build/package/cgss-dmm-hook/`，并生成带版本号的压缩包，例如 `build/package/cgss-dmm-hook-v2.1.zip`。
 
 **致谢**
 - 本项目的 `version.dll` 代理注入思路与运行时 IL2CPP hook 方向，受 `gkms-localify-dmm` 项目启发。
