@@ -2,6 +2,9 @@ TARGET := build/version.dll
 HELPER_TARGET := build/cgss-borderless-helper.exe
 BUILD_DIR := build
 OBJ_DIR := $(BUILD_DIR)/obj
+PACKAGE_DIR := $(BUILD_DIR)/package
+PACKAGE_NAME := cgss-dmm-hook
+PACKAGE_ROOT := $(PACKAGE_DIR)/$(PACKAGE_NAME)
 BUILD ?= release
 
 CC := x86_64-w64-mingw32-gcc
@@ -57,12 +60,13 @@ RC_OBJS := $(patsubst %.rc,$(OBJ_DIR)/%.res,$(RC_SRCS))
 HELPER_RC_OBJS := $(patsubst %.rc,$(OBJ_DIR)/%.res,$(HELPER_RC_SRCS))
 OBJS := $(C_OBJS) $(CXX_OBJS) $(RC_OBJS)
 
-.PHONY: all release debug clean
+.PHONY: all release debug package clean
 
 all: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll
 release: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll
 debug:
 	$(MAKE) BUILD=debug
+package: $(PACKAGE_DIR)/$(PACKAGE_NAME).zip
 
 $(TARGET): $(OBJS) $(DEF_FILE)
 	@mkdir -p $(dir $@)
@@ -75,6 +79,16 @@ $(HELPER_TARGET): $(HELPER_CXX_OBJS) $(HELPER_RC_OBJS)
 $(BUILD_DIR)/libwinpthread-1.dll:
 	@mkdir -p $(dir $@)
 	cp "$(WINPTHREAD_DLL)" "$@"
+
+$(PACKAGE_DIR)/$(PACKAGE_NAME).zip: $(TARGET) $(HELPER_TARGET) $(BUILD_DIR)/libwinpthread-1.dll config.json.example README.md LICENSE THIRD_PARTY_NOTICES.md
+	rm -rf "$(PACKAGE_ROOT)"
+	@mkdir -p "$(PACKAGE_ROOT)"
+	cp "$(TARGET)" "$(PACKAGE_ROOT)/version.dll"
+	cp "$(HELPER_TARGET)" "$(PACKAGE_ROOT)/cgss-borderless-helper.exe"
+	cp "$(BUILD_DIR)/libwinpthread-1.dll" "$(PACKAGE_ROOT)/libwinpthread-1.dll"
+	cp config.json.example "$(PACKAGE_ROOT)/config.json.example"
+	cp README.md LICENSE THIRD_PARTY_NOTICES.md "$(PACKAGE_ROOT)/"
+	cd "$(PACKAGE_DIR)" && zip -qr "$(PACKAGE_NAME).zip" "$(PACKAGE_NAME)"
 
 $(OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
