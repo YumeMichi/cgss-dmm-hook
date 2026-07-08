@@ -64,7 +64,8 @@ namespace config {
                 "  \"force_http\": true,\r\n"
                 "  \"api_url\": \"\",\r\n"
                 "  \"asset_url\": \"asset-starlight-stage.akamaized.net/\",\r\n"
-                "  \"launch_borderless_helper\": true\r\n"
+                "  \"launch_borderless_helper\": true,\r\n"
+                "  \"viewer_id\": 589089289\r\n"
                 "}\r\n";
         }
 
@@ -120,12 +121,16 @@ namespace config {
         read_string(document, "api_url", g_urls.api_url);
         read_string(document, "asset_url", g_urls.asset_url);
         read_bool(document, "launch_borderless_helper", g_urls.launch_borderless_helper);
+        if (document.HasMember("viewer_id") && document["viewer_id"].IsInt()) {
+            g_urls.viewer_id = document["viewer_id"].GetInt();
+        }
 
         hook_logf("[cgss-dmm-hook] force_http=%s", g_urls.force_http ? "true" : "false");
         hook_logf(
             "[cgss-dmm-hook] launch_borderless_helper=%s",
             g_urls.launch_borderless_helper ? "true" : "false"
         );
+        hook_logf("[cgss-dmm-hook] viewer_id=%d", g_urls.viewer_id);
 
         if (!g_urls.api_url.empty()) {
             hook_logf("[cgss-dmm-hook] normalized api_url=%s", g_urls.api_url.c_str());

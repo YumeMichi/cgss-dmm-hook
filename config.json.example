@@ -2,5 +2,6 @@
   "force_http": true,
   "api_url": "",
   "asset_url": "asset-starlight-stage.akamaized.net/",
-  "launch_borderless_helper": true
+  "launch_borderless_helper": true,
+  "viewer_id": 589089289
 }

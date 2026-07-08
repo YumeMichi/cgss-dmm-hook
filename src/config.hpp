@@ -6,6 +6,7 @@ namespace config {
         std::string api_url;
         std::string asset_url;
         bool launch_borderless_helper = true;
+        int viewer_id = 589089289;
     };
 
     bool load();

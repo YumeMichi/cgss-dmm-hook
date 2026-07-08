@@ -7,6 +7,7 @@
 - 等待 IL2CPP 运行时初始化稳定
 - 可选地 hook `Stage.NetworkUtil.GetSchemeType()`，在需要时强制切到 `http`
 - 支持通过 `config.json` 覆盖 `api_url` 和 `asset_url`
+- 支持 hook `CodeStage.AntiCheat.ObscuredTypes.ObscuredPrefs`，直接接管启动所需的 9 个整型参数
 - 自动拉起同目录下的 `cgss-borderless-helper.exe`，用外部 helper 处理 `F11` 无边框全屏
 
 **目录结构**
@@ -53,7 +54,8 @@ make package
   "force_http": true,
   "api_url": "",
   "asset_url": "asset-starlight-stage.akamaized.net/",
-  "launch_borderless_helper": true
+  "launch_borderless_helper": true,
+  "viewer_id": 589089289
 }
 ```
 
@@ -62,6 +64,20 @@ make package
 - `api_url`：必填。API 主机名，按原始字段格式填写，不带 scheme；留空时程序会弹窗提示
 - `asset_url`：资源主机名，按原始字段格式填写，不带 scheme；留空时回落到 `asset-starlight-stage.akamaized.net/`
 - `launch_borderless_helper`：是否自动启动 `cgss-borderless-helper.exe`。默认 `true`
+- `viewer_id`：启动参数接管里使用的 `VIEWER_ID`。默认 `589089289`
+
+当前版本会在运行时直接接管以下 `ObscuredPrefs` 整型键，不再依赖预先写注册表：
+- `VIEWER_ID`
+- `TUTORIAL_STEP`
+- `TUTORIAL_LOADED_FROM_SERVER_FLAG`
+- `TUTORIAL_IS_DIRTY_LOCAL_DATA`
+- `POLICY_PRE_ANNOUNCE_DATE`
+- `POLICY_ANNOUNCE_DATE`
+- `BN_CONTENT_RUN`
+- `BN_CONTENT_AGREE_ANALYSIS`
+- `BN_CONTENT_AGREE_ADVERTISEMENT`
+
+其中只有 `VIEWER_ID` 通过 `config.json` 配置，其余值按当前已验证样本固定写入。
 
 **使用方法**
 1. 将 `build/version.dll`、`build/cgss-borderless-helper.exe` 和 `build/libwinpthread-1.dll` 一起复制到 `imascgstage.exe` 同目录
@@ -76,6 +92,7 @@ make package
 - `version.dll` 只在 `imascgstage.exe` 主进程中继续启动 hook 和 helper；被其他进程间接加载时会跳过。
 - 不要只单独分发 `version.dll`。当前构建依赖 `libwinpthread-1.dll`，如果目标机器缺少它，Windows 会在进入代理代码前直接拒绝加载，此时通常表现为游戏无法启动，且不会生成任何日志。
 - `make` 和 `make package` 都会自动把运行所需文件整理到 `build/package/cgss-dmm-hook/`，并生成带版本号的压缩包，例如 `build/package/cgss-dmm-hook-v2.1.zip`。
+- `ObscuredPrefs` 注册表键值对的加解密分析文档已随仓库提供，见 [ObscuredPrefs 加解密分析文档.md](docs/ObscuredPrefs 加解密分析文档.md)。
 
 **致谢**
 - 本项目的 `version.dll` 代理注入思路与运行时 IL2CPP hook 方向，受 `gkms-localify-dmm` 项目启发。

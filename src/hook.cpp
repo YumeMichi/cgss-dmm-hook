@@ -8,10 +8,14 @@ namespace {
     using GetStringFn = void* (*)(const MethodInfo*);
     using SetStringFn = void (*)(void*, const MethodInfo*);
     using SetSchemeModeFn = void (*)(int, const MethodInfo*);
+    using ObscuredPrefsGetIntFn = int (*)(void*, int, const MethodInfo*);
+    using ObscuredPrefsHasKeyFn = bool (*)(void*, const MethodInfo*);
+    using ObscuredPrefsSetIntFn = void (*)(void*, int, const MethodInfo*);
     constexpr int kHttpSchemeType = 0;
     constexpr DWORD kHookPollIntervalMs = 500;
     constexpr DWORD kGameAssemblySettleDelayMs = 100;
     constexpr int kHookPollMaxAttempts = 600;
+    constexpr LONG kPrefsHookLogLimit = 32;
 
     volatile LONG g_hook_installed = 0;
     GetSchemeTypeFn g_orig_get_scheme_type = nullptr;
@@ -28,6 +32,9 @@ namespace {
     SetStringFn g_orig_custom_preference_set_tele_scope_server_url = nullptr;
     SetStringFn g_orig_custom_preference_set_concert_server_url = nullptr;
     SetStringFn g_orig_custom_preference_set_resource_server_url = nullptr;
+    ObscuredPrefsGetIntFn g_orig_obscured_prefs_get_int = nullptr;
+    ObscuredPrefsHasKeyFn g_orig_obscured_prefs_has_key = nullptr;
+    ObscuredPrefsSetIntFn g_orig_obscured_prefs_set_int = nullptr;
     volatile LONG g_logged_gameassembly = 0;
     volatile LONG g_exports_state = 0;
     ULONGLONG g_gameassembly_seen_tick = 0;
@@ -45,6 +52,92 @@ namespace {
     volatile LONG g_cp_set_tele_scope_hook_called = 0;
     volatile LONG g_cp_set_concert_hook_called = 0;
     volatile LONG g_cp_set_resource_hook_called = 0;
+    volatile LONG g_obscured_get_int_hook_calls = 0;
+    volatile LONG g_obscured_has_key_hook_calls = 0;
+    volatile LONG g_obscured_set_int_hook_calls = 0;
+
+    struct ObscuredIntOverride {
+        const char* key;
+        int value;
+    };
+
+    constexpr ObscuredIntOverride kObscuredIntOverrides[] = {
+        {"TUTORIAL_STEP", 1000},
+        {"TUTORIAL_LOADED_FROM_SERVER_FLAG", 0},
+        {"TUTORIAL_IS_DIRTY_LOCAL_DATA", 0},
+        {"POLICY_PRE_ANNOUNCE_DATE", 1753452686},
+        {"POLICY_ANNOUNCE_DATE", 1753452686},
+        {"BN_CONTENT_RUN", 2},
+        {"BN_CONTENT_AGREE_ANALYSIS", 1},
+        {"BN_CONTENT_AGREE_ADVERTISEMENT", 1},
+    };
+
+    const char* il2cpp_string_chars(void* string_object) {
+        if (!string_object) {
+            return nullptr;
+        }
+        auto* raw = reinterpret_cast<const unsigned char*>(string_object);
+        return reinterpret_cast<const char*>(raw + 16);
+    }
+
+    std::string il2cpp_string_to_utf8(void* string_object) {
+        if (!string_object) {
+            return {};
+        }
+
+        struct Il2CppStringLayout {
+            void* klass;
+            void* monitor;
+            int32_t length;
+            wchar_t chars[1];
+        };
+
+        auto* string_value = reinterpret_cast<const Il2CppStringLayout*>(string_object);
+        if (string_value->length <= 0) {
+            return {};
+        }
+
+        int size = WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            string_value->chars,
+            string_value->length,
+            nullptr,
+            0,
+            nullptr,
+            nullptr
+        );
+        if (size <= 0) {
+            return {};
+        }
+
+        std::string result(static_cast<size_t>(size), '\0');
+        WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            string_value->chars,
+            string_value->length,
+            result.data(),
+            size,
+            nullptr,
+            nullptr
+        );
+        return result;
+    }
+
+    bool lookup_obscured_int_override(const std::string& key, int& out_value) {
+        if (key == "VIEWER_ID") {
+            out_value = config::get().viewer_id;
+            return true;
+        }
+        for (const auto& entry : kObscuredIntOverrides) {
+            if (key == entry.key) {
+                out_value = entry.value;
+                return true;
+            }
+        }
+        return false;
+    }
 
     void* make_api_url_string() {
         const auto& urls = config::get();
@@ -213,6 +306,67 @@ namespace {
                 value = override_value;
             }
             g_orig_custom_preference_set_resource_server_url(value, method);
+        }
+    }
+
+    int obscured_prefs_get_int_hook(void* key, int default_value, const MethodInfo* method) {
+        auto key_string = il2cpp_string_to_utf8(key);
+        int override_value = 0;
+        bool matched = lookup_obscured_int_override(key_string, override_value);
+        LONG count = InterlockedIncrement(&g_obscured_get_int_hook_calls);
+        if (count <= kPrefsHookLogLimit) {
+            hook_logf(
+                "[cgss-dmm-hook] ObscuredPrefs.GetInt hook invoked key=%s matched=%s value=%d default=%d count=%ld",
+                key_string.empty() ? "(null)" : key_string.c_str(),
+                matched ? "true" : "false",
+                matched ? override_value : default_value,
+                default_value,
+                count
+            );
+        }
+        if (matched) {
+            return override_value;
+        }
+        return g_orig_obscured_prefs_get_int ? g_orig_obscured_prefs_get_int(key, default_value, method)
+                                             : default_value;
+    }
+
+    bool obscured_prefs_has_key_hook(void* key, const MethodInfo* method) {
+        auto key_string = il2cpp_string_to_utf8(key);
+        int override_value = 0;
+        bool matched = lookup_obscured_int_override(key_string, override_value);
+        LONG count = InterlockedIncrement(&g_obscured_has_key_hook_calls);
+        if (count <= kPrefsHookLogLimit) {
+            hook_logf(
+                "[cgss-dmm-hook] ObscuredPrefs.HasKey hook invoked key=%s matched=%s count=%ld",
+                key_string.empty() ? "(null)" : key_string.c_str(),
+                matched ? "true" : "false",
+                count
+            );
+        }
+        if (matched) {
+            return true;
+        }
+        return g_orig_obscured_prefs_has_key ? g_orig_obscured_prefs_has_key(key, method) : false;
+    }
+
+    void obscured_prefs_set_int_hook(void* key, int value, const MethodInfo* method) {
+        auto key_string = il2cpp_string_to_utf8(key);
+        int override_value = 0;
+        bool matched = lookup_obscured_int_override(key_string, override_value);
+        LONG count = InterlockedIncrement(&g_obscured_set_int_hook_calls);
+        if (count <= kPrefsHookLogLimit) {
+            hook_logf(
+                "[cgss-dmm-hook] ObscuredPrefs.SetInt hook invoked key=%s matched=%s incoming=%d stored=%d count=%ld",
+                key_string.empty() ? "(null)" : key_string.c_str(),
+                matched ? "true" : "false",
+                value,
+                matched ? override_value : value,
+                count
+            );
+        }
+        if (g_orig_obscured_prefs_set_int) {
+            g_orig_obscured_prefs_set_int(key, matched ? override_value : value, method);
         }
     }
 
@@ -403,6 +557,27 @@ namespace {
         auto cp_set_resource_server_url_addr = il2cpp_symbols::get_method_pointer(
             "Assembly-CSharp.dll", "Cute", "CustomPreference", "SetResourceServerURL", 1
         );
+        auto obscured_prefs_get_int_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll",
+            "CodeStage.AntiCheat.ObscuredTypes",
+            "ObscuredPrefs",
+            "GetInt",
+            2
+        );
+        auto obscured_prefs_has_key_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll",
+            "CodeStage.AntiCheat.ObscuredTypes",
+            "ObscuredPrefs",
+            "HasKey",
+            1
+        );
+        auto obscured_prefs_set_int_addr = il2cpp_symbols::get_method_pointer(
+            "Assembly-CSharp.dll",
+            "CodeStage.AntiCheat.ObscuredTypes",
+            "ObscuredPrefs",
+            "SetInt",
+            2
+        );
 
         auto mh_status = MH_Initialize();
         if (mh_status != MH_OK && mh_status != MH_ERROR_ALREADY_INITIALIZED) {
@@ -530,6 +705,24 @@ namespace {
                 "Cute.CustomPreference.SetResourceServerURL"
             );
         }
+        hook_method(
+            obscured_prefs_get_int_addr,
+            reinterpret_cast<void*>(&obscured_prefs_get_int_hook),
+            reinterpret_cast<void**>(&g_orig_obscured_prefs_get_int),
+            "CodeStage.AntiCheat.ObscuredTypes.ObscuredPrefs.GetInt"
+        );
+        hook_method(
+            obscured_prefs_has_key_addr,
+            reinterpret_cast<void*>(&obscured_prefs_has_key_hook),
+            reinterpret_cast<void**>(&g_orig_obscured_prefs_has_key),
+            "CodeStage.AntiCheat.ObscuredTypes.ObscuredPrefs.HasKey"
+        );
+        hook_method(
+            obscured_prefs_set_int_addr,
+            reinterpret_cast<void*>(&obscured_prefs_set_int_hook),
+            reinterpret_cast<void**>(&g_orig_obscured_prefs_set_int),
+            "CodeStage.AntiCheat.ObscuredTypes.ObscuredPrefs.SetInt"
+        );
 
         InterlockedExchange(&g_hook_installed, 1);
         if (urls.force_http) {
